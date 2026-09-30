@@ -1,15 +1,7 @@
 "use client";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
-import { 
-  Package, 
-  ArrowRightLeft, 
-  Bell, 
-  ListOrdered, 
-  ArrowDownToLine, 
-  Activity,
-  ChevronRight
-} from "lucide-react";
+import { Package, ArrowRightLeft, Bell, ListOrdered, ArrowDownToLine, Activity } from "lucide-react";
 import Link from "next/link";
 
 import { useEffect, useState } from "react";

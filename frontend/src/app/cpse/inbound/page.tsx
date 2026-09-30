@@ -3,10 +3,10 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Check, X, AlertCircle } from "lucide-react";
+import { Check, X } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { API_BASE } from "../../../lib/api";
@@ -61,12 +61,12 @@ export default function CpseInboundPage() {
   };
 
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
-  const loadRequests = async (): Promise<Request[]> => {
+  const loadRequests = useCallback(async (): Promise<Request[]> => {
     const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/inbound-requests`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
-  };
+  }, [cpseId, token]);
 
   useEffect(() => {
     if (!(cpseId && token)) return;
@@ -85,7 +85,7 @@ export default function CpseInboundPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [cpseId, token]);
+  }, [cpseId, token, loadRequests]);
 
   const handleDecision = async (reqId: string, decision: "APPROVED" | "DECLINED") => {
     try {
@@ -94,7 +94,7 @@ export default function CpseInboundPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchRequests();
-    } catch (err) {
+    } catch {
       setDialogConfig({
         isOpen: true,
         title: 'Error',

@@ -3,11 +3,11 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { ArrowRightLeft, X, Building2, Hash, BarChart3, Info, Search, PlaneTakeoff, PlaneLanding, Package, Send, Network } from "lucide-react";
+import { ArrowRightLeft, X, Building2, Hash, BarChart3, Info, Search, Package, Send, Network } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { apiErrorMessage } from "@/lib/apiError";
@@ -95,12 +95,12 @@ export default function MinistryRoutingPage() {
     return () => { cancelled = true; };
   }, [routeItem, token]);
 
-  const loadBatches = async (): Promise<DemandBatch[]> => {
+  const loadBatches = useCallback(async (): Promise<DemandBatch[]> => {
     const res = await axios.get(`${API_BASE}/api/ministry/demands`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
-  };
+  }, [token]);
 
   const fetchBatches = async () => {
     try {
@@ -127,7 +127,7 @@ export default function MinistryRoutingPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, loadBatches]);
 
   const handleRouteOrder = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -83,12 +83,6 @@ export default function AuthPage() {
     });
   };
 
-  const fetchDevUsers = async () => {
-    try {
-      setDevUsers(await loadDevUsers());
-    } catch {}
-  };
-
   // One guarded loader for both effects below: a response arriving after
   // unmount cannot set state on a component that is gone.
   useEffect(() => {
@@ -108,15 +102,6 @@ export default function AuthPage() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [showQuickLogin]);
-
-  const handleDevLoginAs = async (targetEmail: string) => {
-    try {
-      const res = await axios.post(`${API_BASE}/api/dev/login-as`, { email: targetEmail });
-      handleAuthSuccess(res.data.token, res.data.user.role, res.data.user.tenantCpseId);
-    } catch {
-      setDialogConfig({ isOpen: true, title: "Error", message: "Quick login failed." });
-    }
-  };
 
   const handleQuickFill = (user: DevUser) => {
     setEmail(user.email);

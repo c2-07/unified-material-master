@@ -3,7 +3,6 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { usePathname } from "next/navigation";
 import Dialog from "@/components/Dialog";
 import { Package, Plus, Minus, FileText, Clock, Filter, Database, FileOutput } from "lucide-react";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
@@ -32,7 +31,6 @@ export default function CpseAuditLogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   
-  const pathname = usePathname();
   useEffect(() => {
     const fetchLogs = async () => {
       try {

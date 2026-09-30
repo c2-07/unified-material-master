@@ -1,9 +1,9 @@
 "use client";
 import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Upload, Plus, Edit2, Trash2, X, Hash, Tag, BarChart3, Package, Search } from "lucide-react";
+import { Edit2, Trash2, X, Hash, Tag, BarChart3, Package, Search } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
@@ -77,7 +77,7 @@ export default function CpseInventoryPage() {
 
   // Pure data fetch, no state: lets the mount effect and the post-mutation
   // reload share one implementation.
-  const loadInventory = async (): Promise<InventoryItem[]> => {
+  const loadInventory = useCallback(async (): Promise<InventoryItem[]> => {
     const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/inventory`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -87,7 +87,7 @@ export default function CpseInventoryPage() {
       else if (item.quantity <= 300) newTag = "Shortage";
       return { ...item, statusTag: newTag };
     });
-  };
+  }, [cpseId, token]);
 
   const fetchInventory = async () => {
     try {
@@ -116,7 +116,7 @@ export default function CpseInventoryPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [cpseId, token]);
+  }, [cpseId, token, loadInventory]);
 
   const initiateDelete = (e: React.MouseEvent, invId: string) => {
     e.stopPropagation();
@@ -147,7 +147,7 @@ export default function CpseInventoryPage() {
           data: { reason: value }
         });
         fetchInventory();
-      } catch (err) {
+      } catch {
         setDialogConfig({
           isOpen: true,
           title: 'Error',

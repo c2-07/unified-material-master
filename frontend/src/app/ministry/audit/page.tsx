@@ -7,8 +7,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import Dialog from "@/components/Dialog";
-import { Hash, Network, Building2 } from "lucide-react";
-import { Activity, User, Server, Bot, Clock, Filter, Database, CheckCircle, ArrowRightLeft } from "lucide-react";
+import { Activity, User, Server, Bot, Clock, Filter, Database } from "lucide-react";
 import { API_BASE } from "../../../lib/api";
 interface AuditLog {
   id: string;

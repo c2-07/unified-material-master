@@ -3,10 +3,10 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Plus, Trash2, Edit2, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Clock, CheckCircle, XCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { API_BASE } from "../../../lib/api";
@@ -58,6 +58,15 @@ export default function CpseDemandsPage() {
   const cpseId = Cookies.get("tenantCpseId");
   const token = Cookies.get("token");
 
+  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
+  // Declared before fetchDemands so its memoization is preserved.
+  const loadDemands = useCallback(async (): Promise<Demand[]> => {
+    const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/demands`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  }, [cpseId, token]);
+
   const fetchDemands = async () => {
     try {
       setDemands(await loadDemands());
@@ -66,14 +75,6 @@ export default function CpseDemandsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
-  const loadDemands = async (): Promise<Demand[]> => {
-    const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/demands`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return res.data;
   };
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function CpseDemandsPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [cpseId, token]);
+  }, [cpseId, token, loadDemands]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +109,7 @@ export default function CpseDemandsPage() {
       setNewCode("");
       setNewQty("");
       fetchDemands();
-    } catch (err) {
+    } catch {
       setDialogConfig({
         isOpen: true,
         title: 'Error',
@@ -136,7 +137,7 @@ export default function CpseDemandsPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchDemands();
-      } catch (err) {
+      } catch {
         setDialogConfig({
           isOpen: true,
           title: 'Error',

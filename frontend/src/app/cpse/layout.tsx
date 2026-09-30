@@ -316,7 +316,7 @@ export default function CpseLayout({ children }: { children: React.ReactNode }) 
                       notifications.map(n => (
                         <div key={n.id} className="w-full text-left p-4 hover:bg-gray-50 border-b border-gray-50 flex gap-3 transition-colors relative group">
                           <button 
-                            onClick={(e) => { 
+                            onClick={() => {
                               setShowNotifications(false); 
                               router.push(n.type === 'inbound' ? '/cpse/inbound' : '/cpse/demands'); 
                             }}

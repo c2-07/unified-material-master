@@ -3,10 +3,10 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Edit2, ShieldAlert, ShieldCheck, X, CheckCircle, Search, Info, ArrowUpDown, MoreVertical, Zap, Undo2, Building2, Hash, Tag } from "lucide-react";
+import { Edit2, ShieldAlert, ShieldCheck, X, CheckCircle, Search, ArrowUpDown, MoreVertical, Zap, Undo2, Building2, Hash, Tag } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { API_BASE } from "../../../lib/api";
@@ -85,17 +85,22 @@ export default function MinistryCatalogPage() {
       setUndoStack(prev => [previousState, ...prev].slice(0, 10));
       fetchCatalog();
       setOpenRowMenu(null);
-    } catch (err) {
+    } catch {
       setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to approve mapping', type: 'alert' });
     }
   };
 
+  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
+  const loadCatalog = useCallback(async (): Promise<CatalogMapping[]> => {
+    const res = await axios.get(`${API_BASE}/api/ministry/catalog`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  }, [token]);
+
   const fetchCatalog = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/api/ministry/catalog`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCatalog(res.data);
+      setCatalog(await loadCatalog());
     } catch (err) {
       console.error(err);
     } finally {
@@ -104,8 +109,21 @@ export default function MinistryCatalogPage() {
   };
 
   useEffect(() => {
-    if (token) fetchCatalog();
-  }, [token]);
+    if (!token) return;
+    let cancelled = false;
+    loadCatalog()
+      .then((loaded) => {
+        if (cancelled) return;
+        setCatalog(loaded);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [token, loadCatalog]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -137,7 +155,7 @@ export default function MinistryCatalogPage() {
       setShowEdit(false);
       fetchCatalog();
       setDialogConfig(prev => ({ ...prev, isOpen: false }));
-    } catch (err) {
+    } catch {
       setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to update mapping', type: 'alert' });
     }
   };
@@ -164,7 +182,7 @@ export default function MinistryCatalogPage() {
       setUndoStack(prev => prev.slice(1));
       fetchCatalog();
       setShowMenu(false);
-    } catch (err) {
+    } catch {
       setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to undo changes', type: 'alert' });
     }
   };
@@ -178,7 +196,7 @@ export default function MinistryCatalogPage() {
       fetchCatalog();
       // Clearing all approvals flushes the undo stack because it's a massive state change
       setUndoStack([]);
-    } catch (err) {
+    } catch {
       setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to clear approvals', type: 'alert' });
     }
   };
@@ -237,7 +255,7 @@ export default function MinistryCatalogPage() {
       setIsReviewMode(false);
       fetchCatalog();
       setDialogConfig(prev => ({ ...prev, isOpen: false }));
-    } catch (err) {
+    } catch {
        setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to commit bulk approval', type: 'alert' });
     }
   };

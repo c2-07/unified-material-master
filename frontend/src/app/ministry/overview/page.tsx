@@ -1,15 +1,7 @@
 "use client";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
-import { 
-  Building2, 
-  Database, 
-  AlertCircle, 
-  Activity, 
-  Network, 
-  Search,
-  ChevronRight
-} from "lucide-react";
+import { Building2, Database, AlertCircle, Activity, Network, Search } from "lucide-react";
 import Link from "next/link";
 
 import { useEffect, useState } from "react";

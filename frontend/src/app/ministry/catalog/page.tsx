@@ -3,7 +3,7 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { Search, Filter, X, Tag, Hash, Building2, BarChart3, ArrowUpDown } from "lucide-react";
@@ -57,7 +57,6 @@ export default function MinistryGlobalCatalogPage() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCpse, setFilterCpse] = useState("all");
-  const [filterIndex, setFilterIndex] = useState(""); // kept for type compat, unused
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   const [sortField, setSortField] = useState<SortField>("tenantCpseId");
@@ -65,18 +64,8 @@ export default function MinistryGlobalCatalogPage() {
 
   const token = Cookies.get("token");
 
-  const fetchGlobalInventory = async () => {
-    try {
-      setGlobalInventory(await loadGlobalInventory());
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
-  const loadGlobalInventory = async () => {
+  const loadGlobalInventory = useCallback(async () => {
     const res = await axios.get(`${API_BASE}/api/ministry/global-inventory`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -87,7 +76,7 @@ const processed = res.data.map((item: InventoryItem) => {
         return { ...item, statusTag: newTag };
       });
       return processed;
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!(token)) return;
@@ -106,7 +95,7 @@ const processed = res.data.map((item: InventoryItem) => {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, loadGlobalInventory]);
 
   if (loading) return <div className="flex flex-col items-center justify-center py-20 text-gray-500 animate-pulse"><AshokaChakraSpinner className="h-10 w-10 text-[#000080] mb-4" /><span>Loading global catalog...</span></div>;
 
@@ -223,7 +212,7 @@ const processed = res.data.map((item: InventoryItem) => {
 
           {activeFilters > 0 && (
             <button
-              onClick={() => { setFilterCategory("all"); setFilterStatus("all"); setFilterIndex(""); }}
+              onClick={() => { setFilterCategory("all"); setFilterStatus("all"); }}
               className="cf-button-secondary flex items-center gap-1.5 text-sm"
             >
               <Filter className="h-3.5 w-3.5" />

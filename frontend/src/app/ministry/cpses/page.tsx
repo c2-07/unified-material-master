@@ -119,7 +119,7 @@ export default function MinistryCpsesPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchUsers();
-      } catch (err) {
+      } catch {
         setDialogConfig({
           isOpen: true,
           title: 'Error',

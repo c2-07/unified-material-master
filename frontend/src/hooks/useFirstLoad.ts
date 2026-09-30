@@ -10,7 +10,11 @@ import { useState, useEffect } from "react";
  */
 export function useFirstLoad(key: string, ms = 900) {
   const storageKey = `fl_visited_${key}`;
-  const alreadyVisited = typeof window !== "undefined" && sessionStorage.getItem(storageKey) === "1";
+  // Read once, lazily: doing this inline on every render produced a value that
+  // the effect then closed over without being able to depend on it.
+  const [alreadyVisited] = useState(
+    () => typeof window !== "undefined" && sessionStorage.getItem(storageKey) === "1"
+  );
   const [loading, setLoading] = useState(!alreadyVisited);
 
   useEffect(() => {
@@ -20,7 +24,9 @@ export function useFirstLoad(key: string, ms = 900) {
       sessionStorage.setItem(storageKey, "1");
     }, ms);
     return () => clearTimeout(timer);
-  }, []);
+    // storageKey covers `key`; re-running on a key change is the intended
+    // behaviour, since each page tracks its own first-visit flag.
+  }, [alreadyVisited, ms, storageKey]);
 
   return loading;
 }
