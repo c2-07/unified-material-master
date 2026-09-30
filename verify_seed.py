@@ -10,6 +10,7 @@ import sys
 import urllib.error
 import urllib.request
 from collections import Counter
+from urllib.parse import quote
 
 API = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:4000"
 results = []
@@ -160,17 +161,19 @@ check("same-quantity demands are not required (qty matching no longer used)",
 # ── Supplier lookup is usable ────────────────────────────────────────────
 print("\n5. Ministry supplier lookup")
 codes = sorted({i.get("nationalMaterialCode") for b in (batches or []) for i in b.get("items", [])})
+# Material codes are free text and can contain spaces (the backend falls back
+# to `UNMAPPED-<local code>`, and local codes are descriptive strings).
+# urllib refuses a raw space in the request line, so encode the path segment.
 usable = 0
-for code in codes:
-    st, sup = call("GET", f"/api/ministry/suppliers/{code}", min_token)
-    if st == 200 and isinstance(sup, list) and len(sup) > 0:
-        usable += 1
-check("at least one code returns suppliers", usable > 0, f"{usable}/{len(codes)} codes")
 multi = 0
 for code in codes:
-    st, sup = call("GET", f"/api/ministry/suppliers/{code}", min_token)
+    seg = quote(str(code), safe="")
+    st, sup = call("GET", f"/api/ministry/suppliers/{seg}", min_token)
+    if st == 200 and isinstance(sup, list) and len(sup) > 0:
+        usable += 1
     if isinstance(sup, list) and len(sup) > 1:
         multi += 1
+check("at least one code returns suppliers", usable > 0, f"{usable}/{len(codes)} codes")
 check("at least one code has multiple candidate suppliers", multi > 0, f"{multi} with 2+")
 
 # ── Summary ──────────────────────────────────────────────────────────────
