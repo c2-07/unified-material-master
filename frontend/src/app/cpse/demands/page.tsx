@@ -20,6 +20,16 @@ interface Demand {
   updatedAt?: string;
 }
 
+type SortConfig = { field: keyof Demand, direction: 'asc'|'desc' } | null;
+
+// Declared at module scope: defining it inside the page component created a
+// new component identity on every render, which made React unmount and
+// remount every header cell and threw away its state.
+function SortIcon({ field, sortConfig }: { field: keyof Demand, sortConfig: SortConfig }) {
+  if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function CpseDemandsPage() {
   const isLoading = useFirstLoad("cpse-demands", 800);
   const [demands, setDemands] = useState<Demand[]>([]);
@@ -28,7 +38,7 @@ export default function CpseDemandsPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortConfig, setSortConfig] = useState<{ field: keyof Demand, direction: 'asc'|'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [selectedRow, setSelectedRow] = useState<Demand | null>(null);
   
   // New demand modal state
@@ -54,8 +64,8 @@ export default function CpseDemandsPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDemands(res.data);
-    } catch (err: any) {
-      console.error("Failed to load demands.", err.response?.data || err.message);
+    } catch (err) {
+      console.error("Failed to load demands.", err instanceof Error ? err.message : String(err));
       setDemands([]); 
     } finally {
       setLoading(false);
@@ -138,12 +148,7 @@ export default function CpseDemandsPage() {
     setSortConfig({ field, direction });
   };
 
-  const SortIcon = ({ field }: { field: keyof Demand }) => {
-    if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
-    return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
-  };
-
-  let processedData = [...demands];
+  const processedData = [...demands];
   if (sortConfig) {
     processedData.sort((a, b) => {
       const aVal = String(a[sortConfig.field]);
@@ -178,12 +183,12 @@ export default function CpseDemandsPage() {
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
               <tr>
                 <th className="px-6 py-3 text-gray-400 w-12">#</th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("localMaterialCode")}>Local Code <SortIcon field="localMaterialCode" /></th>
-                <th className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("requestedQty")}>Qty <SortIcon field="requestedQty" /></th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("createdAt")}>Requested Date <SortIcon field="createdAt" /></th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("updatedAt")}>Ministry Update <SortIcon field="updatedAt" /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("localMaterialCode")}>Local Code <SortIcon field="localMaterialCode" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("requestedQty")}>Qty <SortIcon field="requestedQty" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("createdAt")}>Requested Date <SortIcon field="createdAt" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("updatedAt")}>Ministry Update <SortIcon field="updatedAt" sortConfig={sortConfig} /></th>
                 <th className="px-6 py-3">Fulfillment Date</th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("ministryStatus")}>Status <SortIcon field="ministryStatus" /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("ministryStatus")}>Status <SortIcon field="ministryStatus" sortConfig={sortConfig} /></th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>

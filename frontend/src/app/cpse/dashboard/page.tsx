@@ -33,6 +33,16 @@ export const getStatusBadge = (statusTag: string) => {
   return <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800 border border-gray-200">{statusTag}</span>;
 };
 
+type SortConfig = { field: keyof InventoryItem, direction: 'asc'|'desc' } | null;
+
+// Declared at module scope: defining it inside the page component created a
+// new component identity on every render, so React unmounted and remounted
+// every sortable header cell on each state change.
+function SortIcon({ field, sortConfig }: { field: keyof InventoryItem, sortConfig: SortConfig }) {
+  if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function CpseInventoryPage() {
   const isLoading = useFirstLoad("cpse-dashboard", 1000);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -50,7 +60,7 @@ export default function CpseInventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [sortConfig, setSortConfig] = useState<{ field: keyof InventoryItem, direction: 'asc'|'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   
   // Details Modal
   const [showDetails, setShowDetails] = useState(false);
@@ -143,11 +153,6 @@ export default function CpseInventoryPage() {
     setSortConfig({ field, direction });
   };
 
-  const SortIcon = ({ field }: { field: keyof InventoryItem }) => {
-    if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
-    return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
-  };
-
   // Filter and Sort
   let processedData = [...inventory];
   if (searchQuery) {
@@ -227,19 +232,19 @@ export default function CpseInventoryPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-gray-400 w-12">#</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("localMaterialCode")}>
-                  Local Code <SortIcon field="localMaterialCode" />
+                  Local Code <SortIcon field="localMaterialCode" sortConfig={sortConfig} />
                 </th>
                 
                 <th className="px-4 py-3 text-left">Description</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("localBaseCategory")}>
-                  Category <SortIcon field="localBaseCategory" />
+                  Category <SortIcon field="localBaseCategory" sortConfig={sortConfig} />
                 </th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("quantity")}>
-                  Qty <SortIcon field="quantity" />
+                  Qty <SortIcon field="quantity" sortConfig={sortConfig} />
                 </th>
                 <th className="px-4 py-3 text-center">UOM</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("statusTag")}>
-                  Status <SortIcon field="statusTag" />
+                  Status <SortIcon field="statusTag" sortConfig={sortConfig} />
                 </th>
                 <th className="px-4 py-3 text-center">Actions</th>
               </tr>

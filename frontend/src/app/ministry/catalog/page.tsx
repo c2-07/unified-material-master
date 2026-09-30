@@ -37,6 +37,14 @@ export const getStatusBadge = (statusTag: string) => {
   return <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800 border border-gray-200">{statusTag}</span>;
 };
 
+// Declared at module scope: inside the page component this created a new
+// component identity each render, remounting every sortable header cell.
+function SortIcon({ field, sortField }: { field: SortField, sortField: SortField }) {
+  return (
+    <ArrowUpDown className={`h-3 w-3 ml-1 inline-block ${sortField === field ? "text-blue-600" : "text-gray-400"}`} />
+  );
+}
+
 export default function MinistryGlobalCatalogPage() {
   const isLoading = useFirstLoad("min-catalog", 800);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -125,10 +133,6 @@ export default function MinistryGlobalCatalogPage() {
     else { setSortField(field); setSortDir("asc"); }
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => (
-    <ArrowUpDown className={`h-3 w-3 ml-1 inline-block ${sortField === field ? "text-blue-600" : "text-gray-400"}`} />
-  );
-
   return (
     <PageLoader loading={isLoading}>
     <div>
@@ -216,24 +220,24 @@ export default function MinistryGlobalCatalogPage() {
               <tr>
                 <th className="px-4 py-3 text-left w-12 text-gray-400">#</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("tenantCpseId")}>
-                  CPSE Hub <SortIcon field="tenantCpseId" />
+                  CPSE Hub <SortIcon field="tenantCpseId" sortField={sortField} />
                 </th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("localMaterialCode")}>
-                  Local Code <SortIcon field="localMaterialCode" />
+                  Local Code <SortIcon field="localMaterialCode" sortField={sortField} />
                 </th>
                 <th className="px-4 py-3 text-center cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("nationalMaterialCode")}>
-                  National Code <SortIcon field="nationalMaterialCode" />
+                  National Code <SortIcon field="nationalMaterialCode" sortField={sortField} />
                 </th>
                 <th className="px-4 py-3 text-left">Description</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("localBaseCategory")}>
-                  Category <SortIcon field="localBaseCategory" />
+                  Category <SortIcon field="localBaseCategory" sortField={sortField} />
                 </th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("quantity")}>
-                  Quantity <SortIcon field="quantity" />
+                  Quantity <SortIcon field="quantity" sortField={sortField} />
                 </th>
                 <th className="px-4 py-3 text-center">UOM</th>
                 <th className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("statusTag")}>
-                  Status <SortIcon field="statusTag" />
+                  Status <SortIcon field="statusTag" sortField={sortField} />
                 </th>
               </tr>
             </thead>

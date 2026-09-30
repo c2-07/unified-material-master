@@ -16,6 +16,16 @@ interface DevUser {
   tenantCpseId: string | null;
 }
 
+type SortConfig = { field: keyof DevUser, direction: 'asc'|'desc' } | null;
+
+// Declared at module scope: defining it inside the page component created a
+// new component identity on every render, so React unmounted and remounted
+// every sortable header cell on each state change.
+function SortIcon({ field, sortConfig }: { field: keyof DevUser, sortConfig: SortConfig }) {
+  if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function MinistryCpsesPage() {
   const isLoading = useFirstLoad("min-cpses", 800);
   const [users, setUsers] = useState<DevUser[]>([]);
@@ -25,7 +35,7 @@ export default function MinistryCpsesPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortConfig, setSortConfig] = useState<{ field: keyof DevUser, direction: 'asc'|'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   
   // Custom Dialog State
   const [dialogConfig, setDialogConfig] = useState<{
@@ -113,11 +123,6 @@ export default function MinistryCpsesPage() {
     setSortConfig({ field, direction });
   };
 
-  const SortIcon = ({ field }: { field: keyof DevUser }) => {
-    if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
-    return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
-  };
-
   let processedData = [...users];
   if (sortConfig) {
     processedData.sort((a, b) => {
@@ -167,8 +172,8 @@ export default function MinistryCpsesPage() {
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
               <tr>
                 <th className="px-6 py-3 text-gray-400 w-12">#</th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("tenantCpseId")}>CPSE ID <SortIcon field="tenantCpseId" /></th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("email")}>Admin Email <SortIcon field="email" /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("tenantCpseId")}>CPSE ID <SortIcon field="tenantCpseId" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort("email")}>Admin Email <SortIcon field="email" sortConfig={sortConfig} /></th>
                 <th className="px-6 py-3 text-right">Danger Zone</th>
               </tr>
             </thead>

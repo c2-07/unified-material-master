@@ -21,6 +21,133 @@ import {
   Plug
 } from "lucide-react";
 
+type SidebarCategory = { title: string; items: { name: string; href: string; icon: React.ComponentType<{ className?: string }> }[] };
+
+const SIDEBAR_CATEGORIES =  [
+  {
+    title: "Overview",
+    items: [
+      { name: "Analytics Overview", href: "/cpse/overview", icon: BarChart3 },
+    ]
+  },
+  {
+    title: "Supply Chain",
+    items: [
+      { name: "Inventory", href: "/cpse/dashboard", icon: Package },
+      { name: "Material Requests", href: "/cpse/demands", icon: Send },
+      { name: "Orders to Fulfill", href: "/cpse/inbound", icon: Inbox },
+    ]
+  },
+  {
+    title: "Administration",
+    items: [
+      { name: "Connect ERP", href: "/cpse/erp", icon: Plug },
+      { name: "Audit Logs", href: "/cpse/audit", icon: History },
+    ]
+  }
+];
+
+
+// Declared at module scope. Defining this inside the layout built a new
+// component type on every render, so React unmounted and remounted the entire
+// sidebar subtree whenever the pathname or node id changed — losing focus and
+// re-running its effects. State and handlers now arrive as props.
+function SidebarContent({
+  categories,
+  cpseId,
+  pathname,
+  onNavigate,
+  showProfilePopover,
+  onToggleProfile,
+  onLogout,
+}: {
+  categories: SidebarCategory[];
+  cpseId: string;
+  pathname: string;
+  onNavigate: () => void;
+  showProfilePopover: boolean;
+  onToggleProfile: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <>
+    <div>
+      <div className="h-16 flex items-center px-6 border-b border-gray-200">
+        <Building2 className="h-6 w-6 text-[#f38020] mr-2 shrink-0" />
+        <span className="font-bold text-gray-900 tracking-tight truncate uppercase">CPSE NODE: {cpseId}</span>
+      </div>
+      <div className="px-4 py-6 space-y-6">
+        {categories.map((category) => (
+          <div key={category.title} className="space-y-1">
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">
+              {category.title}
+            </div>
+            {category.items.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? "bg-[#ebf3ff] text-[#0051c3]"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <item.icon className={`mr-3 h-4 w-4 ${isActive ? "text-[#0051c3]" : "text-gray-400"}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+    
+    <div className="p-4 border-t border-gray-200 relative">
+      {showProfilePopover && (
+        <div className="absolute bottom-full left-4 mb-2 w-[calc(100%-2rem)] bg-white border border-gray-200 shadow-lg rounded-lg p-3 z-50 animate-in fade-in zoom-in-95">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-10 w-10 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold text-lg">
+              {cpseId.charAt(0)}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">{cpseId || 'CPSE'}</p>
+              <p className="text-xs text-gray-500">admin@{cpseId ? cpseId.toLowerCase() : 'cpse'}.gov.in</p>
+            </div>
+          </div>
+          <div className="border-t border-gray-100 pt-2 mt-2">
+            <div className="text-xs text-gray-400 flex items-center gap-2">
+              <Shield className="h-3 w-3" /> Authenticated Session
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-colors">
+        <button 
+          className="flex items-center gap-2 overflow-hidden flex-1 text-left"
+          onClick={onToggleProfile}
+        >
+          <div className="h-8 w-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {cpseId.charAt(0)}
+          </div>
+          <span className="text-sm font-semibold text-gray-900 truncate">{cpseId || 'CPSE'}</span>
+        </button>
+        <button
+          onClick={onLogout}
+          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors ml-2 shrink-0 group"
+          title="Sign Out"
+        >
+          <LogOut className="h-4 w-4 group-hover:text-red-600" />
+        </button>
+      </div>
+    </div>
+    </>
+  );
+}
+
+
 export default function CpseLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,106 +184,7 @@ export default function CpseLayout({ children }: { children: React.ReactNode }) 
     }, 1800);
   };
 
-  const sidebarCategories = [
-    {
-      title: "Overview",
-      items: [
-        { name: "Analytics Overview", href: "/cpse/overview", icon: BarChart3 },
-      ]
-    },
-    {
-      title: "Supply Chain",
-      items: [
-        { name: "Inventory", href: "/cpse/dashboard", icon: Package },
-        { name: "Material Requests", href: "/cpse/demands", icon: Send },
-        { name: "Orders to Fulfill", href: "/cpse/inbound", icon: Inbox },
-      ]
-    },
-    {
-      title: "Administration",
-      items: [
-        { name: "Connect ERP", href: "/cpse/erp", icon: Plug },
-        { name: "Audit Logs", href: "/cpse/audit", icon: History },
-      ]
-    }
-  ];
 
-  const SidebarContent = () => (
-    <>
-      <div>
-        <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <Building2 className="h-6 w-6 text-[#f38020] mr-2 shrink-0" />
-          <span className="font-bold text-gray-900 tracking-tight truncate uppercase">CPSE NODE: {cpseId}</span>
-        </div>
-        <div className="px-4 py-6 space-y-6">
-          {sidebarCategories.map((category) => (
-            <div key={category.title} className="space-y-1">
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">
-                {category.title}
-              </div>
-              {category.items.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive
-                        ? "bg-[#ebf3ff] text-[#0051c3]"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
-                  >
-                    <item.icon className={`mr-3 h-4 w-4 ${isActive ? "text-[#0051c3]" : "text-gray-400"}`} />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="p-4 border-t border-gray-200 relative">
-        {showProfilePopover && (
-          <div className="absolute bottom-full left-4 mb-2 w-[calc(100%-2rem)] bg-white border border-gray-200 shadow-lg rounded-lg p-3 z-50 animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold text-lg">
-                {cpseId.charAt(0)}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">{cpseId || 'CPSE'}</p>
-                <p className="text-xs text-gray-500">admin@{cpseId ? cpseId.toLowerCase() : 'cpse'}.gov.in</p>
-              </div>
-            </div>
-            <div className="border-t border-gray-100 pt-2 mt-2">
-              <div className="text-xs text-gray-400 flex items-center gap-2">
-                <Shield className="h-3 w-3" /> Authenticated Session
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-colors">
-          <button 
-            className="flex items-center gap-2 overflow-hidden flex-1 text-left"
-            onClick={() => setShowProfilePopover(!showProfilePopover)}
-          >
-            <div className="h-8 w-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-              {cpseId.charAt(0)}
-            </div>
-            <span className="text-sm font-semibold text-gray-900 truncate">{cpseId || 'CPSE'}</span>
-          </button>
-          <button
-            onClick={handleLogout}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors ml-2 shrink-0 group"
-            title="Sign Out"
-          >
-            <LogOut className="h-4 w-4 group-hover:text-red-600" />
-          </button>
-        </div>
-      </div>
-    </>
-  );
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f9fafb]">
@@ -179,7 +207,15 @@ export default function CpseLayout({ children }: { children: React.ReactNode }) 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="w-64 bg-white border-r border-gray-200 flex-col justify-between hidden md:flex">
-          <SidebarContent />
+          <SidebarContent
+                categories={SIDEBAR_CATEGORIES}
+                cpseId={cpseId}
+                pathname={pathname}
+                onNavigate={() => setIsMobileMenuOpen(false)}
+                showProfilePopover={showProfilePopover}
+                onToggleProfile={() => setShowProfilePopover(v => !v)}
+                onLogout={handleLogout}
+              />
         </div>
 
         {/* Mobile Sidebar Overlay */}
@@ -199,7 +235,15 @@ export default function CpseLayout({ children }: { children: React.ReactNode }) 
                   <X className="h-6 w-6 text-white" />
                 </button>
               </div>
-              <SidebarContent />
+              <SidebarContent
+                categories={SIDEBAR_CATEGORIES}
+                cpseId={cpseId}
+                pathname={pathname}
+                onNavigate={() => setIsMobileMenuOpen(false)}
+                showProfilePopover={showProfilePopover}
+                onToggleProfile={() => setShowProfilePopover(v => !v)}
+                onLogout={handleLogout}
+              />
             </div>
           </div>
         )}

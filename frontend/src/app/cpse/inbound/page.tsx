@@ -19,6 +19,16 @@ interface Request {
   updatedAt?: string;
 }
 
+type SortConfig = { field: keyof Request, direction: 'asc'|'desc' } | null;
+
+// Declared at module scope: defining it inside the page component created a
+// new component identity on every render, so React unmounted and remounted
+// every sortable header cell on each state change.
+function SortIcon({ field, sortConfig }: { field: keyof Request, sortConfig: SortConfig }) {
+  if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function CpseInboundPage() {
   const isLoading = useFirstLoad("cpse-inbound", 800);
   const [requests, setRequests] = useState<Request[]>([]);
@@ -27,7 +37,7 @@ export default function CpseInboundPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortConfig, setSortConfig] = useState<{ field: keyof Request, direction: 'asc'|'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [selectedRow, setSelectedRow] = useState<Request | null>(null);
   
   // Custom Dialog
@@ -85,11 +95,6 @@ export default function CpseInboundPage() {
     setSortConfig({ field, direction });
   };
 
-  const SortIcon = ({ field }: { field: keyof Request }) => {
-    if (sortConfig?.field !== field) return <span className="ml-1 text-gray-300">↕</span>;
-    return <span className="ml-1 text-[#0051c3]">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
-  };
-
   let processedData = [...requests];
   if (sortConfig) {
     processedData.sort((a, b) => {
@@ -121,12 +126,12 @@ export default function CpseInboundPage() {
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
               <tr>
                 <th className="px-6 py-3 text-gray-400 w-12">#</th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("localMaterialCode")}>Local Code <SortIcon field="localMaterialCode" /></th>
-                <th className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("qtyRequested")}>Qty <SortIcon field="qtyRequested" /></th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("createdAt")}>Date Requested <SortIcon field="createdAt" /></th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("updatedAt")}>Decision Date <SortIcon field="updatedAt" /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("localMaterialCode")}>Local Code <SortIcon field="localMaterialCode" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("qtyRequested")}>Qty <SortIcon field="qtyRequested" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("createdAt")}>Date Requested <SortIcon field="createdAt" sortConfig={sortConfig} /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("updatedAt")}>Decision Date <SortIcon field="updatedAt" sortConfig={sortConfig} /></th>
                 <th className="px-6 py-3">Fulfillment Date</th>
-                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("ourDecision")}>Status <SortIcon field="ourDecision" /></th>
+                <th className="px-6 py-3 cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort("ourDecision")}>Status <SortIcon field="ourDecision" sortConfig={sortConfig} /></th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
