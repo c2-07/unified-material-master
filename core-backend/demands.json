@@ -1,0 +1,128 @@
+[
+  {
+    "id": "3d3189ee-c641-4f05-9c10-c07d9217970d",
+    "requestingCpseId": "ONGC",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T17:29:45.068Z",
+    "items": [
+      {
+        "id": "acf549b7-6024-4ed6-a7e4-bf24e2edeff3",
+        "batchId": "3d3189ee-c641-4f05-9c10-c07d9217970d",
+        "nationalMaterialCode": "NAT-PVF-3002",
+        "requestedQty": 100,
+        "status": "ACKNOWLEDGED",
+        "routings": [
+          {
+            "id": "0ae5e59f-3f35-4993-934b-eb225e665856",
+            "demandItemId": "acf549b7-6024-4ed6-a7e4-bf24e2edeff3",
+            "supplierCpseId": "BHEL",
+            "supplierStatus": "ACCEPTED",
+            "buyerStatus": "NOTIFIED",
+            "createdAt": "2026-09-29T17:29:45.073Z",
+            "updatedAt": "2026-09-29T19:59:18.139Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "batch_101",
+    "requestingCpseId": "SAIL",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T19:43:41.291Z",
+    "items": [
+      {
+        "id": "item_101",
+        "batchId": "batch_101",
+        "nationalMaterialCode": "NAT-CHM-6002",
+        "requestedQty": 450,
+        "status": "SOURCING",
+        "routings": [
+          {
+            "id": "911c3c9a-2201-442e-854c-c36c4d3d2cbf",
+            "demandItemId": "item_101",
+            "supplierCpseId": "OIL",
+            "supplierStatus": "ACCEPTED",
+            "buyerStatus": "PENDING_BUYER",
+            "createdAt": "2026-09-29T19:46:56.898Z",
+            "updatedAt": "2026-09-29T19:46:56.898Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "batch_102",
+    "requestingCpseId": "IOCL",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T19:43:41.291Z",
+    "items": [
+      {
+        "id": "item_102",
+        "batchId": "batch_102",
+        "nationalMaterialCode": "NAT-FAS-2003",
+        "requestedQty": 1200,
+        "status": "SOURCING",
+        "routings": []
+      }
+    ]
+  },
+  {
+    "id": "batch_1",
+    "requestingCpseId": "ONGC",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T19:58:59.580Z",
+    "items": [
+      {
+        "id": "item_1",
+        "batchId": "batch_1",
+        "nationalMaterialCode": "NAT-PVF-3002",
+        "requestedQty": 100,
+        "status": "SOURCING",
+        "routings": []
+      }
+    ]
+  },
+  {
+    "id": "batch_2",
+    "requestingCpseId": "SAIL",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T19:58:59.580Z",
+    "items": [
+      {
+        "id": "item_2",
+        "batchId": "batch_2",
+        "nationalMaterialCode": "NAT-CHM-6002",
+        "requestedQty": 450,
+        "status": "ROUTED",
+        "routings": [
+          {
+            "id": "65ed1c26-1e2a-4b16-a0ac-7824e92f73ca",
+            "demandItemId": "item_2",
+            "supplierCpseId": "OIL",
+            "supplierStatus": "ACCEPTED",
+            "buyerStatus": "PENDING_BUYER",
+            "createdAt": "2026-09-29T20:07:02.690Z",
+            "updatedAt": "2026-09-29T20:07:02.690Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "batch_3",
+    "requestingCpseId": "IOCL",
+    "overallStatus": "PROCESSING",
+    "createdAt": "2026-09-29T19:58:59.580Z",
+    "items": [
+      {
+        "id": "item_3",
+        "batchId": "batch_3",
+        "nationalMaterialCode": "NAT-FAS-2003",
+        "requestedQty": 1200,
+        "status": "SOURCING",
+        "routings": []
+      }
+    ]
+  }
+]
