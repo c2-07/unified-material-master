@@ -66,7 +66,7 @@ export default function MinistryRoutingPage() {
   useEffect(() => {
     if (routeItem && token) {
       setLoadingSuppliers(true);
-      axios.get(`http://localhost:4000/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}`, {
+      axios.get(`http://localhost:4000/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}&qty=${routeItem.item.requestedQty}`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
         setSuppliersForTarget(res.data);

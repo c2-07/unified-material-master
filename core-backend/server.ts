@@ -735,10 +735,16 @@ app.get('/api/ministry/suppliers/:nationalCode', authenticateToken, requireMinis
     localMaterialCode: m.cpseLocalCode
   }));
 
+  // Only offer suppliers who can actually cover the requested quantity.
+  // Falls back to the historical 3000-unit threshold when the caller does
+  // not specify one, so existing callers keep working.
+  const reqQty = Number(req.query.qty);
+  const minQty = Number.isFinite(reqQty) && reqQty > 0 ? reqQty : 3000;
+
   const inventory = await prisma.localInventory.findMany({
-    where: { 
+    where: {
       OR: orConditions,
-      quantity: { gte: 3000 },
+      quantity: { gte: minQty },
       ...(excludeCpse ? { tenantCpseId: { not: excludeCpse } } : {})
     },
     select: { tenantCpseId: true, quantity: true }
