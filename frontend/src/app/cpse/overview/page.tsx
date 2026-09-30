@@ -22,7 +22,8 @@ export default function CpseOverviewPage() {
     activeRequestsCount: 0,
     pendingOrdersCount: 0,
     recentRequests: [] as any[],
-    recentOrders: [] as any[]
+    recentOrders: [] as any[],
+    recentAuditLogs: [] as any[]
   });
 
   useEffect(() => {

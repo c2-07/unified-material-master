@@ -61,7 +61,7 @@ export default function CpseInventoryPage() {
     isOpen: boolean;
     title: string;
     message: string;
-    type: 'alert' | 'confirm';
+    type: 'alert' | 'confirm' | 'prompt';
     targetId?: string;
   }>({ isOpen: false, title: '', message: '', type: 'alert' });
 

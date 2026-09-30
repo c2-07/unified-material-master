@@ -21,7 +21,10 @@ export default function MinistryOverviewPage() {
   const [data, setData] = useState({
     connectedCpsesCount: 0,
     globalItemsCount: 0,
-    highPriorityCount: 0
+    highPriorityCount: 0,
+    recentSearches: [] as any[],
+    recentRouting: [] as any[],
+    recentAuditLogs: [] as any[]
   });
 
   useEffect(() => {
