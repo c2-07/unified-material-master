@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Database, Link as LinkIcon, RefreshCw, CheckCircle, ArrowRight, X, UploadCloud, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Database, RefreshCw, CheckCircle, X, UploadCloud, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
@@ -34,6 +34,9 @@ export default function ConnectErpPage() {
   const [parsedData, setParsedData] = useState<Record<string, string>[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Errors from the sync/rollback calls. Distinct from uploadError, which only
+  // covers problems reading the file itself.
+  const [syncError, setSyncError] = useState<string | null>(null);
   
   useEffect(() => {
     const savedName = localStorage.getItem('erp_filename');
@@ -71,7 +74,6 @@ export default function ConnectErpPage() {
   
   // Animation state
   const [syncProgress, setSyncProgress] = useState(0);
-  const [showChanges, setShowChanges] = useState(false);
   const [syncStats, setSyncStats] = useState<{ imported: number, importedIds: string[] }>({ imported: 0, importedIds: [] });
   const [isRollingBack, setIsRollingBack] = useState(false);
   const [rollbackComplete, setRollbackComplete] = useState(false);
@@ -142,10 +144,10 @@ export default function ConnectErpPage() {
     return () => { cancelled = true; };
   }, [loadInventoryCount]);
 
-  const getColor = (sourceId: string) => {
+  const getColor = useCallback((sourceId: string) => {
     const idx = sourceFields.findIndex(f => f.id === sourceId);
     return COLORS[Math.max(0, idx) % COLORS.length];
-  };
+  }, [sourceFields]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -299,7 +301,7 @@ export default function ConnectErpPage() {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', schedule);
     };
-  }, [mappings, step, sourceFields]);
+  }, [mappings, step, sourceFields, getColor]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!selectedSource || !containerRef.current) return;
@@ -353,19 +355,25 @@ export default function ConnectErpPage() {
         },
         body: JSON.stringify({ inventoryIds: syncStats.importedIds })
       });
-      if (res.ok) {
-        setRollbackComplete(true);
-        setSyncStats({ imported: 0, importedIds: [] });
-        refreshInventoryCount();
+      if (!res.ok) {
+        // Previously a non-ok response was ignored entirely, so a failed
+        // rollback looked identical to a successful one.
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Rollback failed (HTTP ${res.status}).`);
       }
+      setRollbackComplete(true);
+      setSyncStats({ imported: 0, importedIds: [] });
+      setSyncError(null);
+      refreshInventoryCount();
     } catch (err) {
-      console.error("Rollback failed");
+      setSyncError(err instanceof Error ? err.message : 'Rollback failed.');
     } finally {
       setIsRollingBack(false);
     }
   };
 
   const handleSync = async () => {
+    setSyncError(null);
     setStep('syncing');
     setSyncProgress(0);
     setRollbackComplete(false);
@@ -410,11 +418,20 @@ export default function ConnectErpPage() {
         },
         body: formData
       });
-      const result = await res.json();
-      
+      const result = await res.json().catch(() => null);
+
       clearInterval(interval);
+
+      if (!res.ok) {
+        // Previously the status code was never checked and any failure jumped
+        // to the 'complete' step, which told the user the sync had succeeded
+        // when nothing had been imported.
+        throw new Error(result?.error || `Sync failed (HTTP ${res.status}).`);
+      }
+
       setSyncProgress(parsedData.length);
       setSyncStats({ imported: result.rowsImported || 0, importedIds: result.importedIds || [] });
+      setSyncError(null);
       refreshInventoryCount();
 
       setTimeout(() => {
@@ -422,7 +439,11 @@ export default function ConnectErpPage() {
       }, 800);
     } catch (err) {
       clearInterval(interval);
-      setStep('complete');
+      setSyncProgress(0);
+      setSyncError(err instanceof Error ? err.message : 'Sync failed.');
+      // Back to mapping so the user can fix the file and retry; the syncing
+      // screen has no controls and would otherwise leave them stuck.
+      setStep('mapping');
     }
   };
 
@@ -446,6 +467,19 @@ export default function ConnectErpPage() {
           </button>
         )}
       </div>
+
+      {syncError && step !== 'complete' && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="h-5 w-5 text-red-700 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-red-900">Something went wrong</p>
+            <p className="text-sm text-red-800 break-words">{syncError}</p>
+          </div>
+          <button onClick={() => setSyncError(null)} className="ml-auto text-red-700 hover:text-red-900" title="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {step === 'connect' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 flex flex-col items-center text-center">
@@ -688,6 +722,9 @@ export default function ConnectErpPage() {
                   <h2 className="text-lg font-bold text-green-900">Sync Complete</h2>
                 </div>
                 <div className="flex items-center gap-4">
+                  {syncError && (
+                    <span className="text-sm font-semibold text-red-700" title={syncError}>{syncError}</span>
+                  )}
                   {syncStats.importedIds.length > 0 && !rollbackComplete && (
                     <button onClick={handleRollback} disabled={isRollingBack} className="text-sm font-semibold text-amber-600 hover:underline">
                       {isRollingBack ? 'Rolling back...' : 'Undo Sync (Rollback)'}
