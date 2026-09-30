@@ -267,25 +267,39 @@ export default function MinistryCatalogPage() {
 
   if (loading) return <div className="flex flex-col items-center justify-center py-20 text-gray-500 animate-pulse"><AshokaChakraSpinner className="h-10 w-10 text-[#000080] mb-4" /><span>Loading mappings...</span></div>;
 
+  // Stable per base code. These suggestions are built during render, so using
+  // Math.random() made every re-render emit different codes — impure, and it
+  // produced server/client HTML that disagreed during hydration. A small
+  // string hash gives the same code the same suggestions every time, which is
+  // also the behaviour a user expects from a suggestion list.
+  const suggestionSuffix = (baseCode: string, suffix: string) =>
+    /\d+$/.test(baseCode) ? baseCode.replace(/\d+$/, suffix) : `${baseCode}-${suffix}`;
+
+  const seededNumber = (seed: string, salt: number) => {
+    let h = salt;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    return 100 + (h % 900);
+  };
+
   const generateSuggestions = (baseCode: string) => [
     { 
       code: baseCode, match: 98.4, desc: "Exact Match AI Suggestion",
       details: { category: "Primary Equipment", uom: "EA", activeCPSEs: 14, notes: "Highly confident match based on identical descriptions across the network." }
     },
     { 
-      code: baseCode.replace(/\d+$/, '8005'), match: 84.2, desc: "Alternative Variant Match",
+      code: suggestionSuffix(baseCode, '8005'), match: 84.2, desc: "Alternative Variant Match",
       details: { category: "Primary Equipment", uom: "EA", activeCPSEs: 6, notes: "Matches physical characteristics but differs slightly in nominal rating." }
     },
     { 
-      code: baseCode.replace(/\d+$/, '9000'), match: 72.1, desc: "Generic Category Fallback",
+      code: suggestionSuffix(baseCode, '9000'), match: 72.1, desc: "Generic Category Fallback",
       details: { category: "General Supplies", uom: "LOT", activeCPSEs: 32, notes: "Broad category fallback used when specific parameters are omitted." }
     },
     { 
-      code: `NAT-MISC-${Math.floor(Math.random()*900+100)}`, match: 45.3, desc: "Similar structural material",
+      code: `NAT-MISC-${seededNumber(baseCode, 7)}`, match: 45.3, desc: "Similar structural material",
       details: { category: "Structural Components", uom: "KG", activeCPSEs: 2, notes: "Low confidence NLP vector match." }
     },
     { 
-      code: `NAT-UNK-${Math.floor(Math.random()*900+100)}`, match: 21.8, desc: "Uncategorized Item",
+      code: `NAT-UNK-${seededNumber(baseCode, 13)}`, match: 21.8, desc: "Uncategorized Item",
       details: { category: "Uncategorized", uom: "Unknown", activeCPSEs: 0, notes: "No clear historical mapping exists." }
     }
   ];
