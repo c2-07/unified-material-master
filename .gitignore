@@ -1,0 +1,101 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Python virtualenvs
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ML model binaries (tracked config only, never weights)
+*.safetensors
+*.pkl
+*.bin
+*.onnx
+*.h5
+*.pt
+*.ckpt
+ai_models/.locks/
+ai_models/blobs/
+ai_models/models--*/
+ai_models/CACHEDIR.TAG
+
+# Build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Coverage & test artifacts
+coverage/
+.nyc_output/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# ==========================================
+# One-off dev scratch scripts (throwaway)
+# These were ad-hoc patch/debug/extract helpers used while building
+# the app by hand-editing files. They are not part of the codebase
+# and the changes they made are already in the source.
+# ==========================================
+/fix_*.js
+/patch_*.js
+/debug_*.js
+/extract_*.js
+/update_*.js
+/remove_*.js
+/rename_*.js
+/replace_*.js
+/add_*.js
+/move_*.js
+/force_*.js
+/sync_*.js
+/test_api*.js
+
+# Scratch notebooks
+/*.ipynb
+
+# Runtime state / logs
+/demands.json
+/Demand_Exchange_Log.json
+/users_db.json
+/start_server.bat
+
+# Live-exported data (regenerate from source systems)
+/Daily_Stock_Movements_Live.csv
+/Daily_Stock_Movements.csv
+/Dashboard_Analytics_Report.csv
+/BHEL_Initial_Inventory.csv
