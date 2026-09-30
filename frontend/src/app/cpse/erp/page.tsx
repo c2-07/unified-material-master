@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Database, Link as LinkIcon, RefreshCw, CheckCircle, ArrowRight, X, UploadCloud, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useFirstLoad } from "@/hooks/useFirstLoad";
@@ -33,9 +33,7 @@ export default function ConnectErpPage() {
   const [sourceFields, setSourceFields] = useState<{id: string, label: string}[]>([]);
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
-  const [autoMatchedFile, setAutoMatchedFile] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [cpseName, setCpseName] = useState<string>('Loading...');
   
   useEffect(() => {
     const savedName = localStorage.getItem('erp_filename');
@@ -48,10 +46,6 @@ export default function ConnectErpPage() {
       setSourceFields(JSON.parse(savedFields));
       setParsedData(JSON.parse(savedData));
       if (savedMappings) setMappings(JSON.parse(savedMappings));
-      // A persisted mapping set — even an explicitly empty one — means the user
-      // already chose these columns. Suppress the auto-match fallback, otherwise
-      // deselecting everything and reloading would silently remap them.
-      if (savedMappings !== null) setAutoMatchedFile(savedName);
       setStep('mapping');
     }
   }, []);
@@ -83,22 +77,35 @@ export default function ConnectErpPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [lineCoords, setLineCoords] = useState<{id: string, color: string, x1: number, y1: number, x2: number, y2: number}[]>([]);
 
-  useEffect(() => {
-    const fetchCpse = async () => {
-      const cpseId = Cookies.get("tenantCpseId");
-      if (!cpseId) return;
-      try {
-        const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}`, {
-          headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCpseName(data.name);
-        }
-      } catch (err) {}
-    };
-    fetchCpse();
+  // Rows currently stored against this CPSE, shown under the National
+  // Inventory header. Previously this read a bare GET /api/cpse/:id, which
+  // does not exist on the API — the 404 left the label stuck on "Loading..."
+  // forever because the failure path was an empty catch.
+  const [inventoryCount, setInventoryCount] = useState<number | null>(null);
+  const [inventoryCountFailed, setInventoryCountFailed] = useState(false);
+
+  const fetchInventoryCount = useCallback(async () => {
+    const cpseId = Cookies.get("tenantCpseId");
+    if (!cpseId) return;
+    try {
+      const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
+        headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+      });
+      if (!res.ok) {
+        setInventoryCountFailed(true);
+        return;
+      }
+      const data = await res.json();
+      setInventoryCount(Array.isArray(data) ? data.length : 0);
+      setInventoryCountFailed(false);
+    } catch (err) {
+      setInventoryCountFailed(true);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchInventoryCount();
+  }, [fetchInventoryCount]);
 
   const getColor = (sourceId: string) => {
     const idx = sourceFields.findIndex(f => f.id === sourceId);
@@ -167,53 +174,25 @@ export default function ConnectErpPage() {
         setParsedData(data);
         setUploadedFileName(file.name);
         setStep('mapping');
-        
-        // Auto-match obvious columns so the user sees some wires instantly!
-        const autoMappings: Mapping[] = [];
-        const headerStr = newHeaders.map(h => h.id.toLowerCase());
-        
-        TARGET_FIELDS.forEach(tf => {
-          const tName = tf.id.toLowerCase();
-          const match = newHeaders.find(h => 
-            h.id.toLowerCase().includes(tName.replace('local', '')) || 
-            tName.includes(h.id.toLowerCase().replace('_', ''))
-          );
-          if (match) {
-            autoMappings.push({ sourceId: match.id, targetId: tf.id });
-          }
-        });
-        
-        // Specific fallbacks for the ONGC dataset
-        if (!autoMappings.find(m => m.targetId === 'localMaterialCode') && newHeaders.find(h => h.id === 'Legacy_System_Code')) {
-          autoMappings.push({ sourceId: 'Legacy_System_Code', targetId: 'localMaterialCode' });
-        }
-        if (!autoMappings.find(m => m.targetId === 'localDescription') && newHeaders.find(h => h.id === 'Material_Description_Raw')) {
-          autoMappings.push({ sourceId: 'Material_Description_Raw', targetId: 'localDescription' });
-        }
-        if (!autoMappings.find(m => m.targetId === 'localBaseCategory') && newHeaders.find(h => h.id === 'Category')) {
-          autoMappings.push({ sourceId: 'Category', targetId: 'localBaseCategory' });
-        }
-        if (!autoMappings.find(m => m.targetId === 'quantity') && newHeaders.find(h => h.id === 'Quantity_In_Stock')) {
-          autoMappings.push({ sourceId: 'Quantity_In_Stock', targetId: 'quantity' });
-        }
-        if (!autoMappings.find(m => m.targetId === 'uom') && newHeaders.find(h => h.id === 'UOM_Used_By_CPSE')) {
-          autoMappings.push({ sourceId: 'UOM_Used_By_CPSE', targetId: 'uom' });
-        }
 
-        setMappings(autoMappings);
-        
+        // Start with no wires. Column mapping is an explicit user decision —
+        // auto-matching silently connected columns that merely looked similar
+        // by name, which produced wrong inventory rows.
+        setMappings([]);
+
         // Persist
         localStorage.setItem('erp_filename', file.name);
         localStorage.setItem('erp_source_fields', JSON.stringify(newHeaders));
         localStorage.setItem('erp_parsed_data', JSON.stringify(data));
-        if (autoMappings.length > 0) localStorage.setItem('erp_mappings', JSON.stringify(autoMappings));
+        // Drop any mapping persisted for a previous file, otherwise the next
+        // reload would restore wires that point at columns this file lacks.
+        localStorage.removeItem('erp_mappings');
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Could not read the uploaded file.');
       setStep('connect');
       setSourceFields([]);
       setParsedData([]);
       setUploadedFileName('');
-      setAutoMatchedFile(null);
     } finally {
       // Allow re-selecting the same file after fixing it.
       input.value = '';
@@ -225,43 +204,6 @@ export default function ConnectErpPage() {
 
 
   
-  // Force automatch if missing
-  useEffect(() => {
-    // Only auto-match once per uploaded file. Keyed on the file name so that
-    // deselecting every mapping does not immediately re-apply them: the old
-    // guard was mappings.length === 0, which is exactly the state the user
-    // reaches by deselecting everything.
-    if (step === 'mapping' && autoMatchedFile === null && sourceFields.length > 0) {
-      setAutoMatchedFile(uploadedFileName);
-      const autoMappings: Mapping[] = [];
-      TARGET_FIELDS.forEach(tf => {
-        const tName = tf.id.toLowerCase();
-        const match = sourceFields.find(h => 
-          h.id.toLowerCase().includes(tName.replace('local', '')) || 
-          tName.includes(h.id.toLowerCase().replace('_', ''))
-        );
-        if (match) {
-          autoMappings.push({ sourceId: match.id, targetId: tf.id });
-        }
-      });
-      if (!autoMappings.find(m => m.targetId === 'localMaterialCode') && sourceFields.find(h => h.id === 'Legacy_System_Code')) {
-        autoMappings.push({ sourceId: 'Legacy_System_Code', targetId: 'localMaterialCode' });
-      }
-      if (!autoMappings.find(m => m.targetId === 'localDescription') && sourceFields.find(h => h.id === 'Material_Description_Raw')) {
-        autoMappings.push({ sourceId: 'Material_Description_Raw', targetId: 'localDescription' });
-      }
-      if (!autoMappings.find(m => m.targetId === 'localBaseCategory') && sourceFields.find(h => h.id === 'Category')) {
-        autoMappings.push({ sourceId: 'Category', targetId: 'localBaseCategory' });
-      }
-      if (!autoMappings.find(m => m.targetId === 'quantity') && sourceFields.find(h => h.id === 'Quantity_In_Stock')) {
-        autoMappings.push({ sourceId: 'Quantity_In_Stock', targetId: 'quantity' });
-      }
-      if (!autoMappings.find(m => m.targetId === 'uom') && sourceFields.find(h => h.id === 'UOM_Used_By_CPSE')) {
-        autoMappings.push({ sourceId: 'UOM_Used_By_CPSE', targetId: 'uom' });
-      }
-      if (autoMappings.length > 0) setMappings(autoMappings);
-    }
-  }, [step, sourceFields, autoMatchedFile, uploadedFileName]);
 
   // Re-calculate lines after paint so refs are guaranteed to be populated
   useEffect(() => {
@@ -353,6 +295,7 @@ export default function ConnectErpPage() {
       if (res.ok) {
         setRollbackComplete(true);
         setSyncStats({ imported: 0, importedIds: [] });
+        fetchInventoryCount();
       }
     } catch (err) {
       console.error("Rollback failed");
@@ -411,6 +354,7 @@ export default function ConnectErpPage() {
       clearInterval(interval);
       setSyncProgress(parsedData.length);
       setSyncStats({ imported: result.rowsImported || 0, importedIds: result.importedIds || [] });
+      fetchInventoryCount();
 
       setTimeout(() => {
         setStep('complete');
@@ -481,6 +425,26 @@ export default function ConnectErpPage() {
 
       {(step === 'mapping' || step === 'syncing' || step === 'complete') && (
         <div className="space-y-6">
+          {step === 'mapping' && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
+              <p className="text-sm text-blue-900">
+                Click a column on the left, then click the National Inventory field it should feed.
+                Click a connected field again to disconnect it.
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-blue-900/70">
+                  {mappings.length} of {TARGET_FIELDS.length} fields mapped
+                </span>
+                <button
+                  onClick={() => { setMappings([]); setSelectedSource(null); setMousePos(null); }}
+                  disabled={mappings.length === 0}
+                  className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-800 transition-colors hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Mapping Canvas */}
           <div 
@@ -570,7 +534,6 @@ export default function ConnectErpPage() {
                       setSourceFields([]);
                       setParsedData([]);
                       setUploadedFileName('');
-                      setAutoMatchedFile(null);
                       setUploadError(null);
                     }}
                     className="p-1.5 hover:bg-blue-100 rounded-md text-blue-600 transition-colors"
@@ -623,8 +586,13 @@ export default function ConnectErpPage() {
                   <Database className="h-6 w-6 text-blue-100" />
                   <div>
                     <h3 className="font-bold text-sm">National Inventory</h3>
-                    <p className="text-xs text-blue-200">{cpseName}</p>
-                  </div>
+                    <p className="text-xs text-blue-200">
+                      {inventoryCountFailed
+                        ? 'Count unavailable'
+                        : inventoryCount === null
+                          ? 'Loading...'
+                          : `${inventoryCount.toLocaleString()} ${inventoryCount === 1 ? 'entry' : 'entries'} in your database`}
+                    </p>                  </div>
                 </div>
                 <div className="p-2 space-y-1">
                   {TARGET_FIELDS.map(f => {
