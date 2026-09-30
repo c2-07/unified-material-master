@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import { ArrowRightLeft, X, Building2, Hash, BarChart3, Info, Search, PlaneTakeoff, PlaneLanding, Package, Send, Network } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
+import { apiErrorMessage } from "@/lib/apiError";
 
 interface Routing {
   id: string;
@@ -116,11 +117,11 @@ export default function MinistryRoutingPage() {
       setRouteItem(null);
       setSupplierCpse("");
       fetchBatches();
-    } catch (err: any) {
+    } catch (err) {
       setDialogConfig({
         isOpen: true,
         title: 'Error',
-        message: err.response?.data?.error || 'Failed to route order.'
+        message: apiErrorMessage(err, 'Failed to route order.')
       });
     }
   };
@@ -142,11 +143,11 @@ export default function MinistryRoutingPage() {
         title: "Acknowledgement Sent",
         message: `Successfully notified <strong>${batch.requestingCpseId}</strong> that their material has been secured.`
       });
-    } catch (err: any) {
+    } catch (err) {
       setDialogConfig({
         isOpen: true,
         title: "Error Sending Ack",
-        message: err.response?.data?.error || "Failed to send acknowledgement."
+        message: apiErrorMessage(err, "Failed to send acknowledgement.")
       });
     }
   };

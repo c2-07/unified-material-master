@@ -44,7 +44,6 @@ export default function MinistryCatalogPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editItem, setEditItem] = useState<CatalogMapping | null>(null);
   const [newNationalCode, setNewNationalCode] = useState("");
-  const [selectedSuggestion, setSelectedSuggestion] = useState<any | null>(null);
   
   const [showDetails, setShowDetails] = useState(false);
   const [detailsItem, setDetailsItem] = useState<CatalogMapping | null>(null);
@@ -70,7 +69,7 @@ export default function MinistryCatalogPage() {
 
   const token = Cookies.get("token");
 
-  const handleApproveSingle = async (item: any) => {
+  const handleApproveSingle = async (item: CatalogMapping) => {
     const previousState = [{
       id: item.id,
       nationalMaterialCode: item.nationalMaterialCode,
@@ -503,7 +502,6 @@ export default function MinistryCatalogPage() {
                                 setOpenRowMenu(null);
                                 setEditItem(item);
                                 setNewNationalCode(item.nationalMaterialCode);
-                                setSelectedSuggestion(null);
                                 setShowEdit(true);
                               }}
                               className="w-full text-left px-4 py-2.5 text-sm text-[#0051c3] hover:bg-[#ebf3ff] flex items-center gap-2 font-medium"

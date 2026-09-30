@@ -7,6 +7,7 @@ import { ArrowRight, Building2, TerminalSquare, LogIn, Landmark, X, Search } fro
 import axios from "axios";
 import Cookies from "js-cookie";
 import Dialog from "@/components/Dialog";
+import { apiErrorMessage } from "@/lib/apiError";
 
 interface DevUser {
   email: string;
@@ -65,8 +66,8 @@ export default function AuthPage() {
         setIsLogin(true);
         setError("Registration successful! Please log in.");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Authentication failed.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Authentication failed."));
     } finally {
       setLoading(false);
     }

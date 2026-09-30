@@ -87,7 +87,7 @@ export default function CpseInventoryPage() {
         return { ...item, statusTag: newTag };
       });
       setInventory(processed);
-    } catch (err: any) {
+    } catch {
       setError("Failed to load inventory data.");
     } finally {
       setLoading(false);

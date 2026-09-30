@@ -187,15 +187,15 @@ export default function MinistryLayout({ children }: { children: React.ReactNode
 
   // Find current section name and icon
   let currentSectionName = "Dashboard";
-  let CurrentSectionIcon = null as any;
-  SIDEBAR_CATEGORIES.forEach(cat => {
-    cat.items.forEach(item => {
-      if (item.href === pathname) {
-        currentSectionName = item.name;
-        CurrentSectionIcon = item.icon;
-      }
-    });
-  });
+  let CurrentSectionIcon: SidebarCategory["items"][number]["icon"] | null = null;
+  for (const cat of SIDEBAR_CATEGORIES) {
+    const match = cat.items.find((item) => item.href === pathname);
+    if (match) {
+      currentSectionName = match.name;
+      CurrentSectionIcon = match.icon;
+      break;
+    }
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f9fafb]">

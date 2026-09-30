@@ -16,14 +16,45 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 
+// Shapes returned by GET /api/cpse/:id/overview.
+interface OverviewDemand {
+  id: string;
+  localMaterialCode: string;
+  requestedQty: number;
+  ministryStatus: string;
+  cpseFinalDecision: string;
+}
+
+interface OverviewInboundRequest {
+  id: string;
+  localMaterialCode: string;
+  qtyRequested: number;
+  ourDecision: string;
+}
+
+interface OverviewAuditLog {
+  id: string;
+  actionType: string;
+  quantityChanged: number;
+  workOrderRef: string | null;
+  timestamp: string;
+  inventory: { localMaterialCode: string } | null;
+}
+
 export default function CpseOverviewPage() {
   const isLoading = useFirstLoad("cpse-overview", 700);
-  const [data, setData] = useState({
+  const [data, setData] = useState<{
+    activeRequestsCount: number;
+    pendingOrdersCount: number;
+    recentRequests: OverviewDemand[];
+    recentOrders: OverviewInboundRequest[];
+    recentAuditLogs: OverviewAuditLog[];
+  }>({
     activeRequestsCount: 0,
     pendingOrdersCount: 0,
-    recentRequests: [] as any[],
-    recentOrders: [] as any[],
-    recentAuditLogs: [] as any[]
+    recentRequests: [],
+    recentOrders: [],
+    recentAuditLogs: []
   });
 
   useEffect(() => {
@@ -193,7 +224,7 @@ export default function CpseOverviewPage() {
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {data.recentAuditLogs.map((log: any) => (
+                {data.recentAuditLogs.map(log => (
                   <li key={log.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">

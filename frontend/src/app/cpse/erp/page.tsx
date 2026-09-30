@@ -31,7 +31,7 @@ export default function ConnectErpPage() {
   const [step, setStep] = useState<Step>('connect');
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [sourceFields, setSourceFields] = useState<{id: string, label: string}[]>([]);
-  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [parsedData, setParsedData] = useState<Record<string, string>[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   

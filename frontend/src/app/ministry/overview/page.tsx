@@ -16,15 +16,46 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 
+// Shapes returned by GET /api/ministry/overview.
+interface OverviewSearch {
+  id: string;
+  batchId: string;
+  nationalMaterialCode: string;
+  requestedQty: number;
+  status: string;
+}
+
+interface OverviewRouting {
+  id: string;
+  demandItemId: string;
+  supplierCpseId: string;
+  supplierStatus: string;
+  buyerStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface OverviewAuditLog {
+  id: string;
+  actorType: string;
+  actorId: string;
+  action: string;
+  targetTable: string;
+  targetId: string;
+  changes: unknown;
+  description: string;
+  createdAt: string;
+}
+
 export default function MinistryOverviewPage() {
   const isLoading = useFirstLoad("min-overview", 700);
   const [data, setData] = useState({
     connectedCpsesCount: 0,
     globalItemsCount: 0,
     highPriorityCount: 0,
-    recentSearches: [] as any[],
-    recentRouting: [] as any[],
-    recentAuditLogs: [] as any[]
+    recentSearches: [] as OverviewSearch[],
+    recentRouting: [] as OverviewRouting[],
+    recentAuditLogs: [] as OverviewAuditLog[]
   });
 
   useEffect(() => {
@@ -114,7 +145,7 @@ export default function MinistryOverviewPage() {
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {data.recentSearches.map((item: any) => (
+                {data.recentSearches.map(item => (
                   <li key={item.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{item.nationalMaterialCode}</p>
@@ -149,7 +180,7 @@ export default function MinistryOverviewPage() {
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {data.recentRouting.map((route: any) => (
+                {data.recentRouting.map(route => (
                   <li key={route.id} className="p-4 flex flex-col gap-1 hover:bg-gray-50">
                     <p className="text-sm font-semibold text-gray-900">Assigned to: {route.supplierCpseId}</p>
                     <div className="flex gap-2">
@@ -184,7 +215,7 @@ export default function MinistryOverviewPage() {
             </div>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {data.recentAuditLogs.map((log: any) => (
+              {data.recentAuditLogs.map(log => (
                 <li key={log.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">[{log.actorType}] {log.action}</p>
