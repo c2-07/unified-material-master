@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// CPSE LOCAL TABLES (The "Spokes")
+// ==========================================
+
+model LocalInventory {
+  id                  String   @id @default(uuid())
+  tenantCpseId        String   // Ensures multi-tenant isolation (e.g., "ONGC")
+  localMaterialCode   String
+  localDescription    String
+  localBaseCategory   String?
+  quantity            Float
+  uom                 String
+  statusTag           String   // e.g., ACTIVE_INTERNAL, SURPLUS_DECLARED, CRITICAL_SHORTAGE
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  auditLogs           LocalAuditLog[]
+}
+
+model LocalAuditLog {
+  id                  String   @id @default(uuid())
+  inventoryId         String
+  inventory           LocalInventory @relation(fields: [inventoryId], references: [id])
+  actionType          String   // e.g., ADDED, CONSUMED
+  quantityChanged     Float
+  workOrderRef        String?
+  timestamp           DateTime @default(now())
+}
+
+model OutboundDemand {
+  id                  String   @id @default(uuid())
+  tenantCpseId        String   // The CPSE making the request (Buyer)
+  localMaterialCode   String   // The code they understand
+  requestedQty        Float
+  ministryStatus      String   @default("PENDING_MINISTRY") // PENDING_MINISTRY, FOUND_AVAILABLE, UNAVAILABLE
+  cpseFinalDecision   String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  ministryDemandItemId String? // Links back to Ministry Demand Item
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model InboundSupplyRequest {
+  id                  String   @id @default(uuid())
+  tenantCpseId        String   // The CPSE receiving the request (Seller)
+  localMaterialCode   String   // The item Ministry wants them to provide
+  qtyRequested        Float
+  ourDecision         String   @default("PENDING") // PENDING, APPROVED, DECLINED
+  routingId           String?  // Links back to Ministry Routing
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ==========================================
+// MINISTRY MASTER TABLES (The "Hub / Translator")
+// ==========================================
+
+model GlobalAuditLog {
+  id              String   @id @default(uuid())
+  actorType       String   // e.g. "MINISTRY_ADMIN", "AI_ENGINE", "CPSE_SYSTEM"
+  actorId         String?  // ID of the user or system taking action
+  action          String   // e.g. "MAPPING_APPROVED", "DEMAND_ROUTED"
+  targetTable     String   // e.g. "GlobalCatalogMapping"
+  targetId        String   // ID of the affected record
+  changes         Json?    // Stores { before: {}, after: {} } diffs
+  description     String   // Human readable summary like Discord logs
+  createdAt       DateTime @default(now())
+}
+
+model GlobalCatalogMapping {
+  id                    String   @id @default(uuid())
+  cpseId                String
+  cpseLocalCode         String
+  nationalMaterialCode  String
+  aiConfidenceScore     Float
+}
+
+model MinistryDemandBatch {
+  id                  String   @id @default(uuid())
+  requestingCpseId    String
+  overallStatus       String   @default("PROCESSING")
+  createdAt           DateTime @default(now())
+  
+  items               MinistryDemandItem[]
+}
+
+model MinistryDemandItem {
+  id                    String   @id @default(uuid())
+  batchId               String
+  batch                 MinistryDemandBatch @relation(fields: [batchId], references: [id])
+  nationalMaterialCode  String   // Translated by AI mapping
+  requestedQty          Float
+  status                String   @default("SOURCING")
+  
+  routings              MinistryOrderRouting[]
+}
+
+model MinistryOrderRouting {
+  id                  String   @id @default(uuid())
+  demandItemId        String
+  demandItem          MinistryDemandItem @relation(fields: [demandItemId], references: [id])
+  supplierCpseId      String   // The CPSE tasked to fulfill this
+  supplierStatus      String   @default("PENDING_SUPPLIER") // PENDING_SUPPLIER, ACCEPTED, REJECTED
+  buyerStatus         String   @default("PENDING_BUYER")    // PENDING_BUYER, CONFIRMED, CANCELLED
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+
+// ==========================================
+// AUTHENTICATION & USERS
+// ==========================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("CPSE") // 'CPSE' or 'MINISTRY'
+  tenantCpseId String?  // E.g., 'ONGC'. Null if role is 'MINISTRY'
+  createdAt    DateTime @default(now())
+}
