@@ -262,7 +262,9 @@ app.delete('/api/cpse/:id/inventory/:invId', authenticateToken, requireCpseMatch
 
 // 5. Bulk Upload Inventory via CSV
 app.post('/api/cpse/:id/inventory/bulk-upload', authenticateToken, requireCpseMatch, upload.single('file'), (req, res) => {
-  const { id } = req.params;
+  // req.params.id widens to string | string[] on this route because of the
+  // multer middleware in the chain; a path param is always a single string.
+  const id = String(req.params.id);
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const results: any[] = [];
@@ -276,16 +278,24 @@ app.post('/api/cpse/:id/inventory/bulk-upload', authenticateToken, requireCpseMa
         let importedCount = 0;
         const importedIds: string[] = [];
         for (const row of results) {
-          if (!row.localMaterialCode) continue;
+          // csv-parser types a cell as string | string[] (a repeated column
+          // name yields several values), so normalise before persisting.
+          const cell = (v: unknown): string => {
+            const raw = Array.isArray(v) ? v[0] : v;
+            return raw === undefined || raw === null ? '' : String(raw).trim();
+          };
+
+          const localCode = cell(row.localMaterialCode);
+          if (!localCode) continue;
 
           const newItem = await prisma.localInventory.create({
             data: {
               tenantCpseId: id,
-              localMaterialCode: row.localMaterialCode,
-              localDescription: row.localDescription || 'No Description',
-              localBaseCategory: row.localBaseCategory || 'Other',
-              quantity: parseInt(row.quantity) || 0,
-              uom: row.uom || 'EA',
+              localMaterialCode: localCode,
+              localDescription: cell(row.localDescription) || 'No Description',
+              localBaseCategory: cell(row.localBaseCategory) || 'Other',
+              quantity: parseInt(cell(row.quantity)) || 0,
+              uom: cell(row.uom) || 'EA',
               statusTag: 'ACTIVE'
             }
           });
