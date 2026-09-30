@@ -1,0 +1,23 @@
+Target_National_Code,Ground_Truth_Material,Target_Base_Item,Target_Size_Spec,Target_Material_Type,Standard_UOM,Cleaned_Ground_Truth
+NAT-CHM-6001,Industrial Lubricant Shell Tellus S2 V46 208L,Hydraulic Oil,208L Drum,Mineral Oil ISO VG46,DRM,industrial lubricant shell tellus s2 v46 208l
+NAT-CHM-6002,Castrol Magna GC 68 Gear Oil 20L,Gear Oil,20L Can,Mineral Oil ISO VG68,CAN,castrol magna gc 68 gear oil 20l
+NAT-ELE-4001,Copper Cable 4 Core 16 sqmm Armoured,Cable,16 sqmm,Copper,MTR,copper cable 4 core 16 square millimetre armoured
+NAT-ELE-4002,Copper Cable 3 Core 35 sqmm Armoured,Cable,35 sqmm,Copper,MTR,copper cable 3 core 35 square millimetre armoured
+NAT-ELE-4003,Distribution Transformer 500 kVA 11kV/433V,Transformer,500 kVA,Oil Cooled,EA,distribution transformer 500 kva 11kv/433v
+NAT-ELE-4004,LED Flood Light 200W IP66 Outdoor,LED Flood Light,200W,Aluminium Housing,EA,led flood light 200w ip66 outdoor
+NAT-FAS-2001,Hex Bolt High Strength M12 x 50mm,Bolt,M12 x 50mm,High Strength Steel,NOS,hex bolt high strength m12 x 50mm
+NAT-FAS-2002,Hex Bolt High Strength M16 x 75mm,Bolt,M16 x 75mm,High Strength Steel,NOS,hex bolt high strength m16 x 75mm
+NAT-FAS-2003,Stainless Steel Nut M12,Nut,M12,Stainless Steel,NOS,stainless steel nut m12
+NAT-MEC-1001,SKF Deep Groove Ball Bearing 6205,Bearing,6205,Steel,EA,skf deep groove ball bearing 6205
+NAT-MEC-1002,Timken Tapered Roller Bearing 32210,Bearing,32210,Steel,EA,timken tapered roller bearing 32210
+NAT-MEC-1003,FAG Cylindrical Roller Bearing NU310,Bearing,NU310,Steel,EA,fag cylindrical roller bearing nu310
+NAT-MHE-7001,Rubber Conveyor Belt EP400/3 1000mm Width,Conveyor Belt,1000mm,Rubber EP400/3,MTR,rubber conveyor belt ep400/3 1000mm width
+NAT-PPE-5001,Safety Shoes Leather Steel Toe Size 9,Safety Shoes,Size 9,Leather/Steel,PRS,safety shoes leather steel toe size 9
+NAT-PPE-5002,Safety Shoes Leather Steel Toe Size 10,Safety Shoes,Size 10,Leather/Steel,PRS,safety shoes leather steel toe size 10
+NAT-PPE-5003,Industrial Safety Helmet Yellow ISI,Safety Helmet,Standard,HDPE,EA,industrial safety helmet yellow isi
+NAT-PPE-5004,Leather Welding Gloves 14 inch,Welding Gloves,14 inch,Leather,PRS,leather welding gloves 14 inch
+NAT-PVF-3001,Seamless Carbon Steel Pipe 8 inch SCH 40,Pipe,8 inch,Carbon Steel,MTR,seamless carbon steel pipe 8 inch schedule 40
+NAT-PVF-3002,Seamless Carbon Steel Pipe 12 inch SCH 80,Pipe,12 inch,Carbon Steel,MTR,seamless carbon steel pipe 12 inch schedule 80
+NAT-PVF-3003,Stainless Steel Pipe 304L 2 inch SCH 10,Pipe,2 inch,Stainless Steel 304L,MTR,stainless steel pipe 304l 2 inch schedule 10
+NAT-PVF-3004,Gate Valve Cast Iron 4 inch Flanged,Gate Valve,4 inch,Cast Iron,EA,gate valve cast iron 4 inch flanged
+NAT-PVF-3005,Ball Valve Stainless Steel 1 inch Threaded,Ball Valve,1 inch,Stainless Steel,EA,ball valve stainless steel 1 inch threaded

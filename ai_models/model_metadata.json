@@ -1,0 +1,28 @@
+{
+    "model_name": "SIH National Material Matcher Hybrid Engine",
+    "version": "1.1.0",
+    "training_date": "2026-09-08 12:08:13.725190",
+    "total_training_records": 20603,
+    "unique_national_codes": 22,
+    "overall_accuracy": "99.75%",
+    "validation_gap": "0.08%",
+    "cross_validation_score": "99.75% \u00b1 0.06%",
+    "unseen_cpse_accuracy": "99.63%",
+    "expanded_acronym_dictionary_size": 23,
+    "hybrid_weights": {
+        "bert": 0.4,
+        "tfidf": 0.2,
+        "bm25": 0.15,
+        "fuzzy": 0.15,
+        "jaccard": 0.1
+    },
+    "governance_thresholds": {
+        "auto_approval": ">= 75%",
+        "human_review": "50% - 74%",
+        "unmapped_fallback": "< 50%"
+    },
+    "fallback_policy": {
+        "action": "TRIGGER_CATALOG_EXPANSION_REQUEST",
+        "target": "Ministry Data Governance Board"
+    }
+}
