@@ -169,7 +169,13 @@ export default function CpseLayout({ children }: { children: React.ReactNode }) 
     if (!token || role !== "CPSE") {
       router.push("/");
     } else {
+      /* eslint-disable react-hooks/set-state-in-effect -- the tenant id only exists
+         in a cookie, which is unavailable during SSR. Seeding it in a state
+         initializer instead would render "UNKNOWN" on the server and the real id on
+         the client, causing a hydration mismatch. Restoring client-only persisted
+         state after mount is the intended use of this effect. */
       setCpseId(tenant || "UNKNOWN");
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [router]);
 

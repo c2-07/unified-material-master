@@ -65,33 +65,46 @@ export default function MinistryRoutingPage() {
 
   const token = Cookies.get("token");
 
+  const openRouteModal = (batch: DemandBatch, item: DemandItem) => {
+    setSupplierCpse("");
+    setSuppliersForTarget([]);
+    // Set here rather than in the effect below: flipping the loading flag from
+    // the effect meant a synchronous setState on every open.
+    setLoadingSuppliers(true);
+    setRouteItem({ batch, item });
+  };
+
   useEffect(() => {
-    if (routeItem && token) {
-      setLoadingSuppliers(true);
-      axios.get(`http://localhost:4000/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}&qty=${routeItem.item.requestedQty}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => {
-        setSuppliersForTarget(res.data);
-        if (res.data.length > 0) {
-          setSupplierCpse(res.data[0].cpse);
-        }
-      }).catch(err => {
-        console.error(err);
-      }).finally(() => {
-        setLoadingSuppliers(false);
-      });
-    } else {
-      setSuppliersForTarget([]);
-      setSupplierCpse("");
-    }
+    if (!routeItem || !token) return;
+    // Guarded so a late response cannot write into a modal the user has
+    // already closed, or overwrite the list after switching to another item.
+    let cancelled = false;
+    axios.get(`http://localhost:4000/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}&qty=${routeItem.item.requestedQty}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => {
+      if (cancelled) return;
+      setSuppliersForTarget(res.data);
+      if (res.data.length > 0) {
+        setSupplierCpse(res.data[0].cpse);
+      }
+    }).catch(err => {
+      if (!cancelled) console.error(err);
+    }).finally(() => {
+      if (!cancelled) setLoadingSuppliers(false);
+    });
+    return () => { cancelled = true; };
   }, [routeItem, token]);
+
+  const loadBatches = async (): Promise<DemandBatch[]> => {
+    const res = await axios.get("http://localhost:4000/api/ministry/demands", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  };
 
   const fetchBatches = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/ministry/demands", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBatches(res.data);
+      setBatches(await loadBatches());
     } catch (err) {
       console.error(err);
     } finally {
@@ -100,7 +113,20 @@ export default function MinistryRoutingPage() {
   };
 
   useEffect(() => {
-    if (token) fetchBatches();
+    if (!token) return;
+    let cancelled = false;
+    loadBatches()
+      .then((loaded) => {
+        if (cancelled) return;
+        setBatches(loaded);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [token]);
 
   const handleRouteOrder = async (e: React.FormEvent) => {
@@ -363,8 +389,7 @@ export default function MinistryRoutingPage() {
                       ) : (item.routings || []).length > 0 && (item.routings || []).every(r => r.supplierStatus === 'REJECTED') ? (
                         <button
                           onClick={(e) => { e.stopPropagation();
-                            setRouteItem({ batch, item });
-                            setSupplierCpse("");
+                            openRouteModal(batch, item);
                           }}
                           className="px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors bg-amber-600 text-white hover:bg-amber-700 border border-amber-700"
                         >
@@ -373,8 +398,7 @@ export default function MinistryRoutingPage() {
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation();
-                            setRouteItem({ batch, item });
-                            setSupplierCpse("");
+                            openRouteModal(batch, item);
                           }}
                           className="cf-button-primary !py-1.5 !px-3 !text-xs flex items-center gap-1.5"
                         >

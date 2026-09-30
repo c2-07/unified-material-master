@@ -41,6 +41,10 @@ export default function ConnectErpPage() {
     const savedData = localStorage.getItem('erp_parsed_data');
     const savedMappings = localStorage.getItem('erp_mappings');
 
+    /* eslint-disable react-hooks/set-state-in-effect -- restoring the uploaded
+       file/mapping draft from localStorage after mount. These values have no
+       server-rendered equivalent; seeding them in a state initializer would
+       produce a hydration mismatch. This is the intended use of the effect. */
     if (savedName && savedFields && savedData) {
       setUploadedFileName(savedName);
       setSourceFields(JSON.parse(savedFields));
@@ -48,6 +52,7 @@ export default function ConnectErpPage() {
       if (savedMappings) setMappings(JSON.parse(savedMappings));
       setStep('mapping');
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   // Save mappings whenever they change, including when emptied.
@@ -76,6 +81,11 @@ export default function ConnectErpPage() {
   const rightRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const [lineCoords, setLineCoords] = useState<{id: string, color: string, x1: number, y1: number, x2: number, y2: number}[]>([]);
+  // Anchor point of the source column being dragged from, in container
+  // coordinates. Measured in an effect rather than read from refs during
+  // render: measuring the DOM mid-render is a side effect and will not
+  // re-run when only the ref changes.
+  const [sourceAnchor, setSourceAnchor] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // Rows currently stored against this CPSE, shown under the National
   // Inventory header. Previously this read a bare GET /api/cpse/:id, which
@@ -84,28 +94,53 @@ export default function ConnectErpPage() {
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [inventoryCountFailed, setInventoryCountFailed] = useState(false);
 
-  const fetchInventoryCount = useCallback(async () => {
+  // Pure fetch, no state, so it can be reused by the mount effect and the
+  // post-sync/post-rollback refreshes without duplicating the error handling.
+  // Returns null when there is no tenant selected: that is not a lookup
+  // failure, it just means there is nothing to count yet.
+  const loadInventoryCount = useCallback(async (): Promise<number | null> => {
     const cpseId = Cookies.get("tenantCpseId");
-    if (!cpseId) return;
-    try {
-      const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
-        headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
-      });
-      if (!res.ok) {
-        setInventoryCountFailed(true);
-        return;
-      }
-      const data = await res.json();
-      setInventoryCount(Array.isArray(data) ? data.length : 0);
-      setInventoryCountFailed(false);
-    } catch (err) {
-      setInventoryCountFailed(true);
-    }
+    if (!cpseId) return null;
+    const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
+      headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+    });
+    if (!res.ok) throw new Error(`inventory lookup failed: ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data.length : 0;
   }, []);
 
+  const applyInventoryCount = (count: number | null) => {
+    if (count === null) return;
+    setInventoryCount(count);
+    setInventoryCountFailed(false);
+  };
+
+  const applyInventoryCountFailure = () => {
+    setInventoryCountFailed(true);
+  };
+
+  const refreshInventoryCount = async () => {
+    try {
+      applyInventoryCount(await loadInventoryCount());
+    } catch {
+      applyInventoryCountFailure();
+    }
+  };
+
   useEffect(() => {
-    fetchInventoryCount();
-  }, [fetchInventoryCount]);
+    // Guarded so a response arriving after unmount cannot set state.
+    let cancelled = false;
+    loadInventoryCount()
+      .then((count) => {
+        if (cancelled) return;
+        applyInventoryCount(count);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        applyInventoryCountFailure();
+      });
+    return () => { cancelled = true; };
+  }, [loadInventoryCount]);
 
   const getColor = (sourceId: string) => {
     const idx = sourceFields.findIndex(f => f.id === sourceId);
@@ -205,6 +240,32 @@ export default function ConnectErpPage() {
 
   
 
+  // Track the drag anchor for the selected source column.
+  useEffect(() => {
+    if (!selectedSource) return;
+    let rafId: number;
+    const measure = () => {
+      rafId = requestAnimationFrame(() => {
+        const el = leftRefs.current[selectedSource];
+        const container = containerRef.current;
+        if (!el || !container) return;
+        const r = el.getBoundingClientRect();
+        const c = container.getBoundingClientRect();
+        setSourceAnchor({
+          id: selectedSource,
+          x: r.left - c.left + r.width / 2,
+          y: r.top - c.top + r.height / 2
+        });
+      });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', measure);
+    };
+  }, [selectedSource, step, sourceFields]);
+
   // Re-calculate lines after paint so refs are guaranteed to be populated
   useEffect(() => {
     let rafId: number;
@@ -295,7 +356,7 @@ export default function ConnectErpPage() {
       if (res.ok) {
         setRollbackComplete(true);
         setSyncStats({ imported: 0, importedIds: [] });
-        fetchInventoryCount();
+        refreshInventoryCount();
       }
     } catch (err) {
       console.error("Rollback failed");
@@ -354,7 +415,7 @@ export default function ConnectErpPage() {
       clearInterval(interval);
       setSyncProgress(parsedData.length);
       setSyncStats({ imported: result.rowsImported || 0, importedIds: result.importedIds || [] });
-      fetchInventoryCount();
+      refreshInventoryCount();
 
       setTimeout(() => {
         setStep('complete');
@@ -490,25 +551,16 @@ export default function ConnectErpPage() {
                 </g>
               ))}
 
-              {selectedSource && mousePos && (() => {
-                const l = leftRefs.current[selectedSource];
-                if (!l || !containerRef.current) return null;
-                const lr = l.getBoundingClientRect();
-                const containerRect = containerRef.current.getBoundingClientRect();
-                const x1 = lr.left - containerRect.left + lr.width / 2;
-                const y1 = lr.top - containerRect.top + lr.height / 2;
-                const color = getColor(selectedSource);
-                return (
-                  <path 
-                    d={`M ${x1} ${y1} C ${x1 + 150} ${y1}, ${mousePos.x - 150} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`}
-                    fill="none" 
-                    stroke={color} 
-                    strokeWidth="3"
-                    strokeDasharray="6,6"
-                    className="opacity-70 drop-shadow-md animate-pulse"
-                  />
-                );
-              })()}
+              {selectedSource && mousePos && sourceAnchor && sourceAnchor.id === selectedSource && (
+                <path 
+                  d={`M ${sourceAnchor.x} ${sourceAnchor.y} C ${sourceAnchor.x + 150} ${sourceAnchor.y}, ${mousePos.x - 150} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`}
+                  fill="none" 
+                  stroke={getColor(selectedSource)} 
+                  strokeWidth="3"
+                  strokeDasharray="6,6"
+                  className="opacity-70 drop-shadow-md animate-pulse"
+                />
+              )}
             </svg>
 
             <div className="flex justify-between relative z-20">
