@@ -99,3 +99,4 @@ yarn-error.log*
 /Daily_Stock_Movements.csv
 /Dashboard_Analytics_Report.csv
 /BHEL_Initial_Inventory.csv
+/core-backend/ML_Training_Data_Master.csv
