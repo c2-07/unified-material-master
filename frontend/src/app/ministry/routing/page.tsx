@@ -11,7 +11,7 @@ import { ArrowRightLeft, X, Building2, Hash, BarChart3, Info, Search, PlaneTakeo
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { apiErrorMessage } from "@/lib/apiError";
-
+import { API_BASE } from "../../../lib/api";
 interface Routing {
   id: string;
   supplierCpseId: string;
@@ -79,7 +79,7 @@ export default function MinistryRoutingPage() {
     // Guarded so a late response cannot write into a modal the user has
     // already closed, or overwrite the list after switching to another item.
     let cancelled = false;
-    axios.get(`http://localhost:4000/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}&qty=${routeItem.item.requestedQty}`, {
+    axios.get(`${API_BASE}/api/ministry/suppliers/${routeItem.item.nationalMaterialCode}?exclude=${routeItem.batch.requestingCpseId}&qty=${routeItem.item.requestedQty}`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       if (cancelled) return;
@@ -96,7 +96,7 @@ export default function MinistryRoutingPage() {
   }, [routeItem, token]);
 
   const loadBatches = async (): Promise<DemandBatch[]> => {
-    const res = await axios.get("http://localhost:4000/api/ministry/demands", {
+    const res = await axios.get(`${API_BASE}/api/ministry/demands`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
@@ -133,7 +133,7 @@ export default function MinistryRoutingPage() {
     e.preventDefault();
     if (!routeItem) return;
     try {
-      await axios.post("http://localhost:4000/api/ministry/route-order", {
+      await axios.post(`${API_BASE}/api/ministry/route-order`, {
         demandItemId: routeItem.item.id,
         nationalMaterialCode: routeItem.item.nationalMaterialCode,
         supplierCpseId: supplierCpse.toUpperCase()
@@ -155,7 +155,7 @@ export default function MinistryRoutingPage() {
   const handleSendAck = async (batch: DemandBatch, item: DemandItem) => {
     if (!token) return;
     try {
-      await axios.post("http://localhost:4000/api/ministry/send-ack", {
+      await axios.post(`${API_BASE}/api/ministry/send-ack`, {
         demandItemId: item.id,
         requesterCpseId: batch.requestingCpseId,
         requestedQty: item.requestedQty

@@ -9,7 +9,7 @@ import Cookies from "js-cookie";
 import { Check, X, AlertCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
-
+import { API_BASE } from "../../../lib/api";
 interface Request {
   id: string;
   localMaterialCode: string;
@@ -62,7 +62,7 @@ export default function CpseInboundPage() {
 
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
   const loadRequests = async (): Promise<Request[]> => {
-    const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/inbound-requests`, {
+    const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/inbound-requests`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
@@ -89,7 +89,7 @@ export default function CpseInboundPage() {
 
   const handleDecision = async (reqId: string, decision: "APPROVED" | "DECLINED") => {
     try {
-      await axios.patch(`http://localhost:4000/api/cpse/${cpseId}/inbound-requests/${reqId}`, 
+      await axios.patch(`${API_BASE}/api/cpse/${cpseId}/inbound-requests/${reqId}`, 
         { decision },
         { headers: { Authorization: `Bearer ${token}` } }
       );

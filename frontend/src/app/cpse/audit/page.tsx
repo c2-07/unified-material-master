@@ -8,7 +8,7 @@ import Dialog from "@/components/Dialog";
 import { Package, Plus, Minus, FileText, Clock, Filter, Database, FileOutput } from "lucide-react";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
-
+import { API_BASE } from "../../../lib/api";
 interface InventoryItem {
   localMaterialCode: string;
   localDescription: string;
@@ -42,7 +42,7 @@ export default function CpseAuditLogsPage() {
           setLoading(false);
           return;
         }
-        const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/audit-logs`, {
+        const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/audit-logs`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setLogs(res.data);

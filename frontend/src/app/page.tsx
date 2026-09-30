@@ -8,7 +8,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import Dialog from "@/components/Dialog";
 import { apiErrorMessage } from "@/lib/apiError";
-
+import { API_BASE } from "../lib/api";
 interface DevUser {
   email: string;
   role: string;
@@ -55,10 +55,10 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await axios.post("http://localhost:4000/api/auth/login", { email, password });
+        const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
         handleAuthSuccess(res.data.token, res.data.user.role, res.data.user.tenantCpseId);
       } else {
-        await axios.post("http://localhost:4000/api/auth/register", {
+        await axios.post(`${API_BASE}/api/auth/register`, {
           email, password,
           role: activeRole,
           tenantCpseId: activeRole === "CPSE" ? tenantCpseId : undefined,
@@ -75,7 +75,7 @@ export default function AuthPage() {
 
   // Pure fetch, no state: shared by the mount load and the dialog reopen.
   const loadDevUsers = async (): Promise<DevUser[]> => {
-    const res = await axios.get("http://localhost:4000/api/dev/users");
+    const res = await axios.get(`${API_BASE}/api/dev/users`);
     return res.data.sort((a: DevUser, b: DevUser) => {
       if (a.role === "MINISTRY" && b.role !== "MINISTRY") return -1;
       if (a.role !== "MINISTRY" && b.role === "MINISTRY") return 1;
@@ -111,7 +111,7 @@ export default function AuthPage() {
 
   const handleDevLoginAs = async (targetEmail: string) => {
     try {
-      const res = await axios.post("http://localhost:4000/api/dev/login-as", { email: targetEmail });
+      const res = await axios.post(`${API_BASE}/api/dev/login-as`, { email: targetEmail });
       handleAuthSuccess(res.data.token, res.data.user.role, res.data.user.tenantCpseId);
     } catch {
       setDialogConfig({ isOpen: true, title: "Error", message: "Quick login failed." });

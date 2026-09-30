@@ -9,7 +9,7 @@ import Cookies from "js-cookie";
 import { Edit2, ShieldAlert, ShieldCheck, X, CheckCircle, Search, Info, ArrowUpDown, MoreVertical, Zap, Undo2, Building2, Hash, Tag } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
-
+import { API_BASE } from "../../../lib/api";
 interface CatalogMapping {
   id: string;
   cpseId: string;
@@ -77,7 +77,7 @@ export default function MinistryCatalogPage() {
     }];
 
     try {
-      await axios.patch(`http://localhost:4000/api/ministry/catalog/${item.id}`, 
+      await axios.patch(`${API_BASE}/api/ministry/catalog/${item.id}`, 
         { nationalMaterialCode: item.nationalMaterialCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -92,7 +92,7 @@ export default function MinistryCatalogPage() {
 
   const fetchCatalog = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/ministry/catalog", {
+      const res = await axios.get(`${API_BASE}/api/ministry/catalog`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCatalog(res.data);
@@ -128,7 +128,7 @@ export default function MinistryCatalogPage() {
     }];
 
     try {
-      await axios.patch(`http://localhost:4000/api/ministry/catalog/${editItem.id}`, 
+      await axios.patch(`${API_BASE}/api/ministry/catalog/${editItem.id}`, 
         { nationalMaterialCode: newNationalCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -157,7 +157,7 @@ export default function MinistryCatalogPage() {
     if (undoStack.length === 0) return;
     const lastChange = undoStack[0];
     try {
-      await axios.post("http://localhost:4000/api/ministry/catalog/revert", 
+      await axios.post(`${API_BASE}/api/ministry/catalog/revert`, 
         { items: lastChange }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -171,7 +171,7 @@ export default function MinistryCatalogPage() {
 
   const handleClearApprovals = async () => {
     try {
-      await axios.post("http://localhost:4000/api/ministry/catalog/clear-approvals", {}, {
+      await axios.post(`${API_BASE}/api/ministry/catalog/clear-approvals`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowMenu(false);
@@ -228,7 +228,7 @@ export default function MinistryCatalogPage() {
     });
 
     try {
-      await axios.post("http://localhost:4000/api/ministry/catalog/bulk-approve", 
+      await axios.post(`${API_BASE}/api/ministry/catalog/bulk-approve`, 
         { mappingIds: stagedItemIds },
         { headers: { Authorization: `Bearer ${token}` } }
       );

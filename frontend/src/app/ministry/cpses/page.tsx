@@ -9,7 +9,7 @@ import Cookies from "js-cookie";
 import { AlertTriangle, Trash2, Building2, Mail, Shield, Database } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
-
+import { API_BASE } from "../../../lib/api";
 interface DevUser {
   email: string;
   role: string;
@@ -65,7 +65,7 @@ export default function MinistryCpsesPage() {
 
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
   const loadUsers = async (): Promise<DevUser[]> => {
-    const res = await axios.get("http://localhost:4000/api/dev/users");
+    const res = await axios.get(`${API_BASE}/api/dev/users`);
     return res.data.filter((u: DevUser) => u.role === "CPSE");
   };
 
@@ -115,7 +115,7 @@ export default function MinistryCpsesPage() {
       
       setDialogConfig({ ...dialogConfig, isOpen: false });
       try {
-        await axios.delete(`http://localhost:4000/api/ministry/cpse/${targetId}`, {
+        await axios.delete(`${API_BASE}/api/ministry/cpse/${targetId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchUsers();

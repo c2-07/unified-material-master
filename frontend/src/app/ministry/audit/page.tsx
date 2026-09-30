@@ -9,7 +9,7 @@ import Cookies from "js-cookie";
 import Dialog from "@/components/Dialog";
 import { Hash, Network, Building2 } from "lucide-react";
 import { Activity, User, Server, Bot, Clock, Filter, Database, CheckCircle, ArrowRightLeft } from "lucide-react";
-
+import { API_BASE } from "../../../lib/api";
 interface AuditLog {
   id: string;
   actorType: string;
@@ -33,7 +33,7 @@ export default function AuditLogsPage() {
     const fetchLogs = async () => {
       try {
         const token = Cookies.get("token");
-        const res = await axios.get("http://localhost:4000/api/ministry/audit-logs", {
+        const res = await axios.get(`${API_BASE}/api/ministry/audit-logs`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setLogs(res.data);

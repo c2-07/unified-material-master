@@ -8,7 +8,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { Search, Filter, X, Tag, Hash, Building2, BarChart3, ArrowUpDown } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
-
+import { API_BASE } from "../../../lib/api";
 interface InventoryItem {
   id: string;
   tenantCpseId: string;
@@ -77,7 +77,7 @@ export default function MinistryGlobalCatalogPage() {
 
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
   const loadGlobalInventory = async () => {
-    const res = await axios.get("http://localhost:4000/api/ministry/global-inventory", {
+    const res = await axios.get(`${API_BASE}/api/ministry/global-inventory`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 const processed = res.data.map((item: InventoryItem) => {

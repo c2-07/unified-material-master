@@ -5,7 +5,7 @@ import { Database, Link as LinkIcon, RefreshCw, CheckCircle, ArrowRight, X, Uplo
 import Cookies from 'js-cookie';
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
-
+import { API_BASE } from "../../../lib/api";
 type Step = 'connect' | 'mapping' | 'syncing' | 'complete';
 
 interface Mapping {
@@ -101,7 +101,7 @@ export default function ConnectErpPage() {
   const loadInventoryCount = useCallback(async (): Promise<number | null> => {
     const cpseId = Cookies.get("tenantCpseId");
     if (!cpseId) return null;
-    const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
+    const res = await fetch(`${API_BASE}/api/cpse/${cpseId}/inventory`, {
       headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
     });
     if (!res.ok) throw new Error(`inventory lookup failed: ${res.status}`);
@@ -345,7 +345,7 @@ export default function ConnectErpPage() {
     setIsRollingBack(true);
     const cpseId = Cookies.get("tenantCpseId");
     try {
-      const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory/bulk-rollback`, {
+      const res = await fetch(`${API_BASE}/api/cpse/${cpseId}/inventory/bulk-rollback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ export default function ConnectErpPage() {
 
     // 3. Send to actual API
     try {
-      const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory/bulk-upload`, {
+      const res = await fetch(`${API_BASE}/api/cpse/${cpseId}/inventory/bulk-upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${Cookies.get('token')}`

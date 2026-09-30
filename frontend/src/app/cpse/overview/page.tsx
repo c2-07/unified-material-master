@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-
+import { API_BASE } from "../../../lib/api";
 // Shapes returned by GET /api/cpse/:id/overview.
 interface OverviewDemand {
   id: string;
@@ -64,7 +64,7 @@ export default function CpseOverviewPage() {
         const cpseId = Cookies.get("tenantCpseId");
         if (!token || !cpseId) return;
         
-        const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/overview`, {
+        const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/overview`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(res.data);

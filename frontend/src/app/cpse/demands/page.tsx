@@ -9,7 +9,7 @@ import Cookies from "js-cookie";
 import { Plus, Trash2, Edit2, Clock, CheckCircle, XCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
-
+import { API_BASE } from "../../../lib/api";
 interface Demand {
   id: string;
   localMaterialCode: string;
@@ -70,7 +70,7 @@ export default function CpseDemandsPage() {
 
   // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
   const loadDemands = async (): Promise<Demand[]> => {
-    const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/demands`, {
+    const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/demands`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
@@ -98,7 +98,7 @@ export default function CpseDemandsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:4000/api/cpse/${cpseId}/demands`, {
+      await axios.post(`${API_BASE}/api/cpse/${cpseId}/demands`, {
         localMaterialCode: newCode,
         requestedQty: parseFloat(newQty)
       }, {
@@ -132,7 +132,7 @@ export default function CpseDemandsPage() {
     if (dialogConfig.type === 'confirm' && dialogConfig.targetId) {
       setDialogConfig({ ...dialogConfig, isOpen: false });
       try {
-        await axios.delete(`http://localhost:4000/api/cpse/${cpseId}/demands/${dialogConfig.targetId}`, {
+        await axios.delete(`${API_BASE}/api/cpse/${cpseId}/demands/${dialogConfig.targetId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchDemands();

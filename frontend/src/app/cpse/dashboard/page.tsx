@@ -8,7 +8,7 @@ import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
-
+import { API_BASE } from "../../../lib/api";
 interface InventoryItem {
   id: string;
   localMaterialCode: string;
@@ -78,7 +78,7 @@ export default function CpseInventoryPage() {
   // Pure data fetch, no state: lets the mount effect and the post-mutation
   // reload share one implementation.
   const loadInventory = async (): Promise<InventoryItem[]> => {
-    const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
+    const res = await axios.get(`${API_BASE}/api/cpse/${cpseId}/inventory`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data.map((item: InventoryItem) => {
@@ -142,7 +142,7 @@ export default function CpseInventoryPage() {
       }
       setDialogConfig({ ...dialogConfig, isOpen: false });
       try {
-        await axios.delete(`http://localhost:4000/api/cpse/${cpseId}/inventory/${dialogConfig.targetId}`, {
+        await axios.delete(`${API_BASE}/api/cpse/${cpseId}/inventory/${dialogConfig.targetId}`, {
           headers: { Authorization: `Bearer ${token}` },
           data: { reason: value }
         });

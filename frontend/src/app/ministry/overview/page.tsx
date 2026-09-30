@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-
+import { API_BASE } from "../../../lib/api";
 // Shapes returned by GET /api/ministry/overview.
 interface OverviewSearch {
   id: string;
@@ -64,7 +64,7 @@ export default function MinistryOverviewPage() {
         const token = Cookies.get("token");
         if (!token) return;
         
-        const res = await axios.get(`http://localhost:4000/api/ministry/overview`, {
+        const res = await axios.get(`${API_BASE}/api/ministry/overview`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(res.data);
