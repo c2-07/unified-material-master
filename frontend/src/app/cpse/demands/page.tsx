@@ -60,22 +60,39 @@ export default function CpseDemandsPage() {
 
   const fetchDemands = async () => {
     try {
-      const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/demands`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setDemands(res.data);
+      setDemands(await loadDemands());
     } catch (err) {
-      console.error("Failed to load demands.", err instanceof Error ? err.message : String(err));
-      setDemands([]); 
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
+  const loadDemands = async (): Promise<Demand[]> => {
+    const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/demands`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  };
+
   useEffect(() => {
-    if (cpseId && token) {
-      fetchDemands();
-    }
+    if (!(cpseId && token)) return;
+    // Guarded so a response arriving after unmount, or after the
+    // dependencies changed, cannot set state on a stale render.
+    let cancelled = false;
+    loadDemands()
+      .then((loaded) => {
+        if (cancelled) return;
+        setDemands(loaded);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [cpseId, token]);
 
   const handleCreate = async (e: React.FormEvent) => {

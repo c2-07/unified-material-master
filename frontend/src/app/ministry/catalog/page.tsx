@@ -47,7 +47,7 @@ function SortIcon({ field, sortField }: { field: SortField, sortField: SortField
 
 export default function MinistryGlobalCatalogPage() {
   const isLoading = useFirstLoad("min-catalog", 800);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setGlobalInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,16 +67,7 @@ export default function MinistryGlobalCatalogPage() {
 
   const fetchGlobalInventory = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/ministry/global-inventory", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const processed = res.data.map((item: InventoryItem) => {
-        let newTag = "Internal Use";
-        if (item.quantity >= 3000) newTag = "Surplus";
-        else if (item.quantity <= 300) newTag = "Shortage";
-        return { ...item, statusTag: newTag };
-      });
-      setInventory(processed);
+      setGlobalInventory(await loadGlobalInventory());
     } catch (err) {
       console.error(err);
     } finally {
@@ -84,8 +75,37 @@ export default function MinistryGlobalCatalogPage() {
     }
   };
 
+  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
+  const loadGlobalInventory = async () => {
+    const res = await axios.get("http://localhost:4000/api/ministry/global-inventory", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+const processed = res.data.map((item: InventoryItem) => {
+        let newTag = "Internal Use";
+        if (item.quantity >= 3000) newTag = "Surplus";
+        else if (item.quantity <= 300) newTag = "Shortage";
+        return { ...item, statusTag: newTag };
+      });
+      return processed;
+  };
+
   useEffect(() => {
-    if (token) fetchGlobalInventory();
+    if (!(token)) return;
+    // Guarded so a response arriving after unmount, or after the
+    // dependencies changed, cannot set state on a stale render.
+    let cancelled = false;
+    loadGlobalInventory()
+      .then((loaded) => {
+        if (cancelled) return;
+        setGlobalInventory(loaded);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [token]);
 
   if (loading) return <div className="flex flex-col items-center justify-center py-20 text-gray-500 animate-pulse"><AshokaChakraSpinner className="h-10 w-10 text-[#000080] mb-4" /><span>Loading global catalog...</span></div>;

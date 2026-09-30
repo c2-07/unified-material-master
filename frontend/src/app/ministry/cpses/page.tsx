@@ -55,8 +55,7 @@ export default function MinistryCpsesPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/dev/users");
-      setUsers(res.data.filter((u: DevUser) => u.role === "CPSE"));
+      setUsers(await loadUsers());
     } catch (err) {
       console.error(err);
     } finally {
@@ -64,8 +63,29 @@ export default function MinistryCpsesPage() {
     }
   };
 
+  // Pure fetch, no state: shared by the mount effect and post-mutation reloads.
+  const loadUsers = async (): Promise<DevUser[]> => {
+    const res = await axios.get("http://localhost:4000/api/dev/users");
+    return res.data.filter((u: DevUser) => u.role === "CPSE");
+  };
+
   useEffect(() => {
-    if (token) fetchUsers();
+    if (!(token)) return;
+    // Guarded so a response arriving after unmount, or after the
+    // dependencies changed, cannot set state on a stale render.
+    let cancelled = false;
+    loadUsers()
+      .then((loaded) => {
+        if (cancelled) return;
+        setUsers(loaded);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [token]);
 
   const initiateDelete = (cpseId: string | null) => {
@@ -123,7 +143,7 @@ export default function MinistryCpsesPage() {
     setSortConfig({ field, direction });
   };
 
-  let processedData = [...users];
+  const processedData = [...users];
   if (sortConfig) {
     processedData.sort((a, b) => {
       const aVal = String(a[sortConfig.field]);

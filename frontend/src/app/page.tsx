@@ -73,17 +73,41 @@ export default function AuthPage() {
     }
   };
 
+  // Pure fetch, no state: shared by the mount load and the dialog reopen.
+  const loadDevUsers = async (): Promise<DevUser[]> => {
+    const res = await axios.get("http://localhost:4000/api/dev/users");
+    return res.data.sort((a: DevUser, b: DevUser) => {
+      if (a.role === "MINISTRY" && b.role !== "MINISTRY") return -1;
+      if (a.role !== "MINISTRY" && b.role === "MINISTRY") return 1;
+      return (a.tenantCpseId || "").localeCompare(b.tenantCpseId || "");
+    });
+  };
+
   const fetchDevUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/dev/users");
-      const sorted = res.data.sort((a: DevUser, b: DevUser) => {
-        if (a.role === "MINISTRY" && b.role !== "MINISTRY") return -1;
-        if (a.role !== "MINISTRY" && b.role === "MINISTRY") return 1;
-        return (a.tenantCpseId || "").localeCompare(b.tenantCpseId || "");
-      });
-      setDevUsers(sorted);
+      setDevUsers(await loadDevUsers());
     } catch {}
   };
+
+  // One guarded loader for both effects below: a response arriving after
+  // unmount cannot set state on a component that is gone.
+  useEffect(() => {
+    let cancelled = false;
+    loadDevUsers()
+      .then((sorted) => { if (!cancelled) setDevUsers(sorted); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Refresh the list each time the dialog opens.
+  useEffect(() => {
+    if (!showQuickLogin) return;
+    let cancelled = false;
+    loadDevUsers()
+      .then((sorted) => { if (!cancelled) setDevUsers(sorted); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [showQuickLogin]);
 
   const handleDevLoginAs = async (targetEmail: string) => {
     try {
@@ -100,13 +124,6 @@ export default function AuthPage() {
     setActiveRole(user.role === "MINISTRY" ? "MINISTRY" : "CPSE");
     setShowQuickLogin(false);
   };
-
-  useEffect(() => {
-    if (showQuickLogin) { fetchDevUsers(); setSearchQuery(""); }
-  }, [showQuickLogin]);
-
-  // Load quick-fill users on mount
-  useEffect(() => { fetchDevUsers(); }, []);
 
   // Auto-redirect if already logged in
   useEffect(() => {
@@ -183,7 +200,7 @@ export default function AuthPage() {
         {/* Quick Login button — top right */}
         <div className="absolute top-5 right-5">
           <button
-            onClick={() => setShowQuickLogin(true)}
+            onClick={() => { setSearchQuery(""); setShowQuickLogin(true); }}
             className="flex items-center gap-2 bg-gray-900 text-white px-3 py-1.5 rounded-md text-xs font-mono shadow hover:bg-gray-700 transition"
           >
             <TerminalSquare className="h-3.5 w-3.5 text-green-400" />
@@ -320,7 +337,7 @@ export default function AuthPage() {
                   {devUsers.filter(u => u.role === "CPSE").length > 4 && (
                     <button
                       type="button"
-                      onClick={() => setShowQuickLogin(true)}
+                      onClick={() => { setSearchQuery(""); setShowQuickLogin(true); }}
                       className="px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-400 border border-gray-200 hover:bg-gray-200 transition"
                     >
                       +{devUsers.filter(u => u.role === "CPSE").length - 4} more

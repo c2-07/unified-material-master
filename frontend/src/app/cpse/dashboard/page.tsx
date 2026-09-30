@@ -75,18 +75,23 @@ export default function CpseInventoryPage() {
     targetId?: string;
   }>({ isOpen: false, title: '', message: '', type: 'alert' });
 
+  // Pure data fetch, no state: lets the mount effect and the post-mutation
+  // reload share one implementation.
+  const loadInventory = async (): Promise<InventoryItem[]> => {
+    const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data.map((item: InventoryItem) => {
+      let newTag = "Internal Use";
+      if (item.quantity >= 3000) newTag = "Surplus";
+      else if (item.quantity <= 300) newTag = "Shortage";
+      return { ...item, statusTag: newTag };
+    });
+  };
+
   const fetchInventory = async () => {
     try {
-      const res = await axios.get(`http://localhost:4000/api/cpse/${cpseId}/inventory`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const processed = res.data.map((item: InventoryItem) => {
-        let newTag = "Internal Use";
-        if (item.quantity >= 3000) newTag = "Surplus";
-        else if (item.quantity <= 300) newTag = "Shortage";
-        return { ...item, statusTag: newTag };
-      });
-      setInventory(processed);
+      setInventory(await loadInventory());
     } catch {
       setError("Failed to load inventory data.");
     } finally {
@@ -95,9 +100,22 @@ export default function CpseInventoryPage() {
   };
 
   useEffect(() => {
-    if (cpseId && token) {
-      fetchInventory();
-    }
+    if (!cpseId || !token) return;
+    // Guarded so a response arriving after unmount (or after cpseId/token
+    // changed) cannot set state on a component that is gone.
+    let cancelled = false;
+    loadInventory()
+      .then((processed) => {
+        if (cancelled) return;
+        setInventory(processed);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError("Failed to load inventory data.");
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [cpseId, token]);
 
   const initiateDelete = (e: React.MouseEvent, invId: string) => {
