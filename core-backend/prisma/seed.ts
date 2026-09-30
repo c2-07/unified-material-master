@@ -142,14 +142,25 @@ async function main() {
             if (data && data.confidence_score) {
               score = data.confidence_score;
             } else {
-              score = 80 + Math.random() * 19.9;
+              // ML fetch failed, fall back to distributed random
+              const r = Math.random();
+              if (r < 0.5) score = 90 + Math.random() * 9.9; // 50% -> 90+
+              else if (r < 0.9) score = 80 + Math.random() * 9.9; // 40% -> 80+
+              else score = 60 + Math.random() * 19.9; // 10% -> 60-80
             }
           } catch (err) {
-            score = 80 + Math.random() * 19.9;
+            // ML unreachable, fall back to distributed random
+            const r = Math.random();
+            if (r < 0.5) score = 90 + Math.random() * 9.9;
+            else if (r < 0.9) score = 80 + Math.random() * 9.9;
+            else score = 60 + Math.random() * 19.9;
           }
         } else {
-          // Randomize
-          score = 80 + Math.random() * 19.9;
+          // Pure distributed random
+          const r = Math.random();
+          if (r < 0.5) score = 90 + Math.random() * 9.9;
+          else if (r < 0.9) score = 80 + Math.random() * 9.9;
+          else score = 60 + Math.random() * 19.9;
         }
       }
 
