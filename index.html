@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>National Unified Material Master Portal | Ministry of Heavy Industries &amp; Public Enterprises, GoI</title>
+<style>
+  :root {
+    --navy: #06264d;
+    --navy2: #0a3d7a;
+    --saffron: #ff9933;
+    --green: #138808;
+    --gold: #b8860b;
+    --link: #0056b3;
+    --bg: #eef1f5;
+    --card: #ffffff;
+    --border: #ccd3db;
+    --text: #202b38;
+    --muted: #5c6b7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: Verdana, Arial, "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  a { color: var(--link); }
+
+  .util-bar {
+    background: #003057; color: #dbe4ee; font-size: 11px;
+    padding: 4px 20px; display: flex; justify-content: space-between; flex-wrap: wrap;
+  }
+  .util-bar a { color: #dbe4ee; text-decoration: none; margin: 0 6px; border-right: 1px solid #46607f; padding-right: 12px; }
+  .util-bar a:last-child { border-right: none; }
+  .util-bar .font-ctrl button {
+    background: none; border: 1px solid #46607f; color: #dbe4ee; font-size: 10px;
+    padding: 0 5px; cursor: pointer; margin-left: 2px;
+  }
+
+  .tricolor { height: 5px; display: flex; }
+  .tricolor div { flex: 1; }
+  .tricolor .a { background: var(--saffron); }
+  .tricolor .b { background: #ffffff; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+  .tricolor .c { background: var(--green); }
+
+  .site-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f6f9 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .emblem-badge {
+    width: 58px; height: 58px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e7c25a, var(--gold) 75%);
+    border: 2px solid var(--navy); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: bold; color: #3a2c00; text-align: center; line-height: 1.1;
+  }
+  .site-header .titles h1 { margin: 0; font-size: 19px; color: var(--navy); font-weight: 700; }
+  .site-header .titles .hindi { font-size: 13px; color: var(--muted); margin: 1px 0; }
+  .site-header .titles .sub { font-size: 12px; color: var(--muted); }
+  .site-header .gov-mark { margin-left: auto; text-align: right; font-size: 11px; color: var(--muted); }
+  .site-header .gov-mark strong { display: block; color: var(--navy); font-size: 13px; }
+
+  nav.main-nav {
+    background: var(--navy); border-bottom: 3px solid var(--saffron);
+  }
+  nav.main-nav ul {
+    list-style: none; margin: 0; padding: 0 20px; display: flex; flex-wrap: wrap;
+  }
+  nav.main-nav a {
+    display: block; padding: 11px 18px; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  nav.main-nav a:hover, nav.main-nav a.active { background: var(--navy2); }
+  #userChip { margin-left: auto; padding: 8px 18px; color: #fff; font-size: 12px; display: none; align-items: center; gap: 10px; }
+  #logoutBtn {
+    background: var(--saffron); color: #2b1500; border: none; padding: 5px 12px;
+    border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 700;
+  }
+
+  .ticker-wrap {
+    background: #fff8e6; border-bottom: 1px solid #ecd9a0; padding: 6px 20px;
+    font-size: 12.5px; color: #5c4300; display: flex; align-items: center; gap: 8px;
+    overflow: hidden; white-space: nowrap;
+  }
+  .ticker-wrap .label { font-weight: 700; background: var(--saffron); color: #2b1500; padding: 2px 8px; border-radius: 2px; flex-shrink: 0; }
+  .ticker-text { display: inline-block; animation: scroll-left 22s linear infinite; }
+  @keyframes scroll-left { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
+
+  .breadcrumb {
+    max-width: 1200px; margin: 14px auto 0; padding: 0 20px; font-size: 12px; color: var(--muted);
+  }
+
+  main.content { max-width: 1200px; margin: 0 auto; padding: 14px 20px 40px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 3px;
+    margin-bottom: 18px;
+  }
+  .card-head {
+    background: #f4f6f9; border-bottom: 2px solid var(--navy); padding: 10px 16px;
+    font-size: 14px; font-weight: 700; color: var(--navy);
+  }
+  .card-body { padding: 16px; }
+
+  label { display: block; font-size: 12px; font-weight: 700; margin: 10px 0 4px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border: 1px solid #aab4bf; border-radius: 2px; font-size: 13px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid var(--navy2); border-color: var(--navy2); }
+
+  button.btn-primary {
+    background: var(--navy); color: #fff; border: none; padding: 9px 20px;
+    border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: 700; margin-top: 12px;
+  }
+  button.btn-primary:hover { background: var(--navy2); }
+  button.btn-outline {
+    background: #fff; color: var(--navy); border: 1px solid var(--navy);
+    padding: 7px 16px; border-radius: 2px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; }
+  th { background: var(--navy); color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+
+  .badge { padding: 2px 9px; border-radius: 2px; font-size: 10.5px; font-weight: 700; color: #fff; display: inline-block; }
+  .badge.ACTIVE, .badge.AUTO-APPROVED, .badge.MATCHES_FOUND { background: var(--green); }
+  .badge.LOW_STOCK, .badge.NEEDS-REVIEW, .badge.PENDING { background: var(--saffron); color: #2b1500; }
+  .badge.CRITICAL, .badge.UNMAPPED_NEW_MATERIAL, .badge.NO_SURPLUS_AVAILABLE { background: #b02a2a; }
+  .badge.CONSUMED { background: #6b7684; }
+  .badge.SHARE_OFFERED_PENDING_MINISTRY_APPROVAL { background: var(--navy2); }
+
+  .result-box { margin-top: 14px; padding: 12px 14px; background: #f4f6f9; border-left: 4px solid var(--navy); font-size: 13px; }
+  .msg-error { color: #b02a2a; font-size: 12.5px; margin-top: 8px; }
+  .msg-ok { color: var(--green); font-size: 12.5px; margin-top: 8px; }
+
+  .tab-strip { display: flex; border-bottom: 2px solid var(--navy); margin-bottom: 0; }
+  .tab-strip button {
+    background: #dfe6ee; border: none; border-right: 1px solid var(--border);
+    padding: 9px 16px; font-size: 12.5px; font-weight: 700; color: var(--navy); cursor: pointer;
+  }
+  .tab-strip button.active { background: var(--navy); color: #fff; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  #loginScreen { display: flex; justify-content: center; padding: 50px 20px; }
+  .login-card { width: 380px; }
+  .login-card .card-body p.notice {
+    font-size: 11.5px; background: #fff3cd; border: 1px solid #ffe08a; padding: 8px 10px; color: #6b5300; margin-top: 14px;
+  }
+  #app { display: none; }
+
+  footer.site-footer { background: var(--navy); color: #cddcee; margin-top: 30px; }
+  .footer-links { max-width: 1200px; margin: 0 auto; padding: 26px 20px; display: flex; flex-wrap: wrap; gap: 40px; }
+  .footer-col h4 { color: #fff; font-size: 13px; margin: 0 0 10px; border-bottom: 1px solid #2b4d78; padding-bottom: 6px; }
+  .footer-col a { display: block; color: #b9cbe2; font-size: 12px; text-decoration: none; margin-bottom: 6px; }
+  .footer-col a:hover { color: #fff; text-decoration: underline; }
+  .footer-bottom {
+    background: #041b38; text-align: center; padding: 10px; font-size: 11px; color: #93a9c2;
+  }
+</style>
+</head>
+<body>
+
+<div class="util-bar">
+  <div>
+    <a href="#">Skip to Main Content</a>
+    <a href="#">Screen Reader Access</a>
+    <a href="#">Sitemap</a>
+    <a href="#">हिन्दी</a>
+  </div>
+  <div class="font-ctrl">
+    Text Size: <button>A-</button><button>A</button><button>A+</button>
+  </div>
+</div>
+<div class="tricolor"><div class="a"></div><div class="b"></div><div class="c"></div></div>
+
+<header class="site-header">
+  <div class="emblem-badge">GOVT<br>OF<br>INDIA</div>
+  <div class="titles">
+    <h1>National Unified Material Master Platform</h1>
+    <div class="hindi">राष्ट्रीय एकीकृत सामग्री मास्टर मंच</div>
+    <div class="sub">Ministry of Heavy Industries &amp; Public Enterprises &bull; Department of Public Enterprises</div>
+  </div>
+  <div class="gov-mark">
+    <strong>भारत सरकार</strong>
+    Government of India
+  </div>
+</header>
+
+<nav class="main-nav">
+  <ul>
+    <li><a href="#" class="active">Home</a></li>
+    <li><a href="#">About the Scheme</a></li>
+    <li><a href="#">Participating CPSEs</a></li>
+    <li><a href="#">Downloads</a></li>
+    <li><a href="#">RTI</a></li>
+    <li><a href="#">Contact Us</a></li>
+    <div id="userChip">
+      <span id="whoami"></span>
+      <button id="logoutBtn" onclick="logout()">Log Out</button>
+    </div>
+  </ul>
+</nav>
+
+<div class="ticker-wrap">
+  <span class="label">NOTICE</span>
+  <span class="ticker-text">
+    &bull; One Nation &ndash; One Material Code initiative now covers 19 CPSEs across 5 sectors &bull;
+    Onboarding of remaining CPSEs is in progress &bull; For technical support contact the helpdesk &bull;
+    This is a prototype platform developed for Smart India Hackathon 2026 &bull;
+  </span>
+</div>
+
+<div class="breadcrumb">Home &gt; Portal Login</div>
+
+<div id="loginScreen">
+  <div class="card login-card">
+    <div class="card-head">Registered User Login</div>
+    <div class="card-body">
+      <label>User ID</label>
+      <input id="loginUser" type="text" placeholder="e.g. ongc_admin">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="Enter password">
+      <button class="btn-primary" style="width:100%" onclick="doLogin()">Login</button>
+      <div id="loginMsg" class="msg-error"></div>
+      <p class="notice">
+        Demo credentials for evaluation &mdash;<br>
+        CPSE: <b>ongc_admin</b> / Ongc@2026!<br>
+        Ministry: <b>ministry_admin</b> / Ministry@2026!
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+<main class="content">
+
+  <div class="tab-strip" id="tabBar"></div>
+
+  <div class="card tab-pane" id="pane-inventory" style="border-top:none;">
+    <div class="card-head">My Organisation &mdash; Material Inventory</div>
+    <div class="card-body">
+      <button class="btn-outline" onclick="loadStatus()">Refresh</button>
+      <table><thead><tr><th>National Code</th><th>Material</th><th>Stock</th><th>Reorder Level</th><th>Status</th></tr></thead>
+      <tbody id="statusBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-match" style="border-top:none;">
+    <div class="card-head">AI-Assisted Material Description Matching</div>
+    <div class="card-body">
+      <label>Enter Material Description (as recorded in your legacy system)</label>
+      <input id="matchInput" placeholder='e.g. "BRG BALL 6205 SKF"'>
+      <button class="btn-primary" onclick="runMatch()">Submit for AI Matching</button>
+      <div id="matchResult" class="result-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-stock" style="border-top:none;">
+    <div class="card-head">Daily Stock Movement Entry</div>
+    <div class="card-body">
+      <label>National Code</label>
+      <input id="stockCode" placeholder="e.g. NAT-MEC-1001">
+      <label>Quantity</label>
+      <input id="stockQty" type="number" min="1">
+      <label>Reason / Remarks</label>
+      <input id="stockReason" placeholder="e.g. Procurement Receipt">
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary" onclick="stockMove('inward')">Record Inward (Received)</button>
+        <button class="btn-outline" onclick="stockMove('outward')">Record Outward (Consumed)</button>
+      </div>
+      <div id="stockMsg"></div>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-demand" style="border-top:none;">
+    <div class="card-head">Inter-CPSE Demand Exchange Request</div>
+    <div class="card-body">
+      <label>Material Required</label>
+      <input id="demandQuery" placeholder='e.g. "need 8 inch steel pipe"'>
+      <label>Quantity Needed</label>
+      <input id="demandQty" type="number" min="1">
+      <button class="btn-primary" onclick="postDemand()">Submit Request</button>
+      <div id="demandResult" class="result-box" style="display:none;"></div>
+
+      <h4 style="margin-top:22px; color:var(--navy);">My Submitted Requests</h4>
+      <button class="btn-outline" onclick="loadMyRequests()">Refresh</button>
+      <table><thead><tr><th>Request ID</th><th>Material</th><th>Qty</th><th>Status</th><th>Responses</th></tr></thead>
+      <tbody id="demandBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-gov-inventory" style="border-top:none;">
+    <div class="card-head">National Inventory Lookup</div>
+    <div class="card-body">
+      <label>National Code</label>
+      <input id="govCodeInput" placeholder="e.g. NAT-MEC-1001">
+      <button class="btn-primary" onclick="loadNationalInventory()">Search</button>
+      <div id="govInvSummary" class="result-box" style="display:none;"></div>
+      <table><thead><tr><th>CPSE</th><th>Sector</th><th>Stock</th><th>Reorder Level</th><th>Surplus</th></tr></thead>
+      <tbody id="govInvBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-gov-duplicates" style="border-top:none;">
+    <div class="card-head">National Duplicate Detection Report</div>
+    <div class="card-body">
+      <button class="btn-outline" onclick="loadDuplicates()">Refresh</button>
+      <table><thead><tr><th>National Code</th><th>Material</th><th>Duplicate Entries</th><th>CPSEs Using</th><th>Total Stock</th></tr></thead>
+      <tbody id="dupBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card tab-pane" id="pane-gov-status" style="border-top:none;">
+    <div class="card-head">National Stock Status Summary</div>
+    <div class="card-body">
+      <button class="btn-outline" onclick="loadStatusSummary()">Refresh</button>
+      <table><thead><tr><th>National Code</th><th>Material</th><th>Total Stock</th><th>Reporting CPSEs</th><th>Critical</th><th>Low Stock</th><th>Consumed</th></tr></thead>
+      <tbody id="statusSummaryBody"></tbody></table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-links">
+    <div class="footer-col">
+      <h4>About</h4>
+      <a href="#">Scheme Objectives</a>
+      <a href="#">Participating Sectors</a>
+      <a href="#">FAQs</a>
+    </div>
+    <div class="footer-col">
+      <h4>Policies</h4>
+      <a href="#">Terms of Use</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Hyperlinking Policy</a>
+    </div>
+    <div class="footer-col">
+      <h4>Related Links</h4>
+      <a href="#">Department of Public Enterprises</a>
+      <a href="#">Digital India</a>
+      <a href="#">Data.gov.in</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="#">Helpdesk</a>
+      <a href="#">Feedback</a>
+      <a href="#">RTI Portal</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    Content owned by Ministry of Heavy Industries &amp; Public Enterprises, Government of India (Prototype) &bull;
+    Developed for Smart India Hackathon 2026 &bull; Last Updated: <span id="lastUpdated"></span>
+  </div>
+</footer>
+
+<script>
+document.getElementById("lastUpdated").textContent = new Date().toLocaleDateString("en-IN");
+
+const API = "http://127.0.0.1:8000";
+let TOKEN = null, ROLE = null, TENANT = null;
+
+async function doLogin() {
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const msg = document.getElementById("loginMsg");
+  msg.textContent = "";
+  try {
+    const res = await fetch(`${API}/api/login-json`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) { msg.textContent = (await res.json()).detail || "Login failed."; return; }
+    const data = await res.json();
+    TOKEN = data.access_token; ROLE = data.role; TENANT = data.tenant_cpse;
+
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("userChip").style.display = "flex";
+    document.getElementById("whoami").textContent =
+      ROLE === "GOVT_SUPER_ADMIN" ? "Ministry Super Admin" : `${TENANT} (${ROLE})`;
+    buildTabs();
+  } catch (e) {
+    msg.textContent = "Cannot reach server at " + API + ". Is the backend running?";
+  }
+}
+
+function logout() {
+  TOKEN = null; ROLE = null; TENANT = null;
+  document.getElementById("app").style.display = "none";
+  document.getElementById("userChip").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("loginUser").value = "";
+  document.getElementById("loginPass").value = "";
+}
+
+function authHeaders() { return { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }; }
+
+const CPSE_TABS = [
+  { id: "inventory", label: "My Inventory", onShow: loadStatus },
+  { id: "match", label: "AI Material Match" },
+  { id: "stock", label: "Daily Stock Entry" },
+  { id: "demand", label: "Demand Exchange", onShow: loadMyRequests },
+];
+const GOV_TABS = [
+  { id: "gov-inventory", label: "National Inventory" },
+  { id: "gov-duplicates", label: "Duplicate Report", onShow: loadDuplicates },
+  { id: "gov-status", label: "Stock Status Summary", onShow: loadStatusSummary },
+];
+
+function buildTabs() {
+  const tabs = ROLE === "GOVT_SUPER_ADMIN" ? GOV_TABS : CPSE_TABS;
+  const bar = document.getElementById("tabBar");
+  bar.innerHTML = "";
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  tabs.forEach((t, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = t.label;
+    btn.className = i === 0 ? "active" : "";
+    btn.onclick = () => showTab(t.id, tabs);
+    bar.appendChild(btn);
+  });
+  showTab(tabs[0].id, tabs);
+}
+
+function showTab(id, tabs) {
+  [...document.getElementById("tabBar").children].forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  const idx = tabs.findIndex(t => t.id === id);
+  document.getElementById("tabBar").children[idx].classList.add("active");
+  document.getElementById("pane-" + id).classList.add("active");
+  if (tabs[idx].onShow) tabs[idx].onShow();
+}
+
+async function loadStatus() {
+  const res = await fetch(`${API}/api/stock/my-status`, { headers: authHeaders() });
+  const data = await res.json();
+  document.getElementById("statusBody").innerHTML = (data.materials || []).map(m => `
+    <tr><td>${m.national_code}</td><td>${m.material_name}</td><td>${m.stock}</td>
+    <td>${m.reorder_level}</td><td><span class="badge ${m.status}">${m.status}</span></td></tr>
+  `).join("");
+}
+
+async function runMatch() {
+  const text = document.getElementById("matchInput").value.trim();
+  if (!text) return;
+  const res = await fetch(`${API}/api/match-material`, {
+    method: "POST", headers: authHeaders(), body: JSON.stringify({ raw_description: text }),
+  });
+  const data = await res.json();
+  const box = document.getElementById("matchResult");
+  box.style.display = "block";
+  box.innerHTML = `<b>Matched National Code:</b> ${data.matched_national_code}
+    <span class="badge ${data.approval_status}">${data.approval_status}</span><br>
+    <b>Standard Name:</b> ${data.standard_material_name}<br>
+    <b>Confidence:</b> ${data.confidence_score}% &nbsp; <b>Size:</b> ${data.extracted_size} &nbsp;
+    <b>Material:</b> ${data.extracted_material}`;
+}
+
+async function stockMove(direction) {
+  const code = document.getElementById("stockCode").value.trim();
+  const qty = parseInt(document.getElementById("stockQty").value, 10);
+  const reason = document.getElementById("stockReason").value || "Stock Update";
+  const msgEl = document.getElementById("stockMsg");
+  if (!code || !qty) { msgEl.textContent = "Enter both fields."; msgEl.className = "msg-error"; return; }
+  const res = await fetch(`${API}/api/stock/${direction}`, {
+    method: "POST", headers: authHeaders(),
+    body: JSON.stringify({ national_code: code, quantity: qty, reason }),
+  });
+  const data = await res.json();
+  if (!res.ok) { msgEl.textContent = data.detail; msgEl.className = "msg-error"; return; }
+  msgEl.textContent = `Updated. New stock: ${data.new_stock} (${data.status})`;
+  msgEl.className = "msg-ok";
+  loadStatus();
+}
+
+async function postDemand() {
+  const query_text = document.getElementById("demandQuery").value.trim();
+  const quantity_needed = parseInt(document.getElementById("demandQty").value, 10);
+  if (!query_text || !quantity_needed) return;
+  const res = await fetch(`${API}/api/demand-exchange/v2`, {
+    method: "POST", headers: authHeaders(), body: JSON.stringify({ query_text, quantity_needed }),
+  });
+  const data = await res.json();
+  const box = document.getElementById("demandResult");
+  box.style.display = "block";
+  box.innerHTML = `<b>Request ID:</b> ${data.request_id} &nbsp; <span class="badge ${data.status}">${data.status}</span><br>
+    <b>Matched:</b> ${data.standard_material_name || "N/A"}<br>
+    <b>Surplus Holders Found:</b> ${(data.surplus_matches || []).length}`;
+  loadMyRequests();
+}
+
+async function loadMyRequests() {
+  const res = await fetch(`${API}/api/demand-exchange/my-requests`, { headers: authHeaders() });
+  const data = await res.json();
+  document.getElementById("demandBody").innerHTML = (data.requests || []).map(r => `
+    <tr><td>${r.request_id}</td><td>${r.query_text}</td><td>${r.quantity_needed}</td>
+    <td><span class="badge ${r.status}">${r.status}</span></td><td>${(r.responses || []).length}</td></tr>
+  `).join("");
+}
+
+async function loadNationalInventory() {
+  const code = document.getElementById("govCodeInput").value.trim();
+  if (!code) return;
+  const res = await fetch(`${API}/api/national-inventory/${encodeURIComponent(code)}`, { headers: authHeaders() });
+  const data = await res.json();
+  const summary = document.getElementById("govInvSummary");
+  if (!res.ok) { summary.style.display = "block"; summary.textContent = data.detail; document.getElementById("govInvBody").innerHTML = ""; return; }
+  summary.style.display = "block";
+  summary.innerHTML = `<b>${data.standard_name}</b><br>Total National Stock: ${data.total_national_stock} &nbsp;|&nbsp;
+    Total Surplus: ${data.total_surplus_available} &nbsp;|&nbsp; CPSEs Reporting: ${data.cpse_count}`;
+  document.getElementById("govInvBody").innerHTML = (data.inventory_breakdown || []).map(r => `
+    <tr><td>${r.tenant_cpse}</td><td>${r.sector}</td><td>${r.quantity_in_stock}</td>
+    <td>${r.reorder_level}</td><td>${r.surplus_available}</td></tr>
+  `).join("");
+}
+
+async function loadDuplicates() {
+  const res = await fetch(`${API}/api/analytics/duplicates`, { headers: authHeaders() });
+  const data = await res.json();
+  document.getElementById("dupBody").innerHTML = (data.report || []).map(r => `
+    <tr><td>${r.national_code}</td><td>${r.standard_name}</td><td>${r.total_duplicate_entries}</td>
+    <td>${r.cpses_using_this_item}</td><td>${r.total_national_stock}</td></tr>
+  `).join("");
+}
+
+async function loadStatusSummary() {
+  const res = await fetch(`${API}/api/analytics/national-status-summary`, { headers: authHeaders() });
+  const data = await res.json();
+  document.getElementById("statusSummaryBody").innerHTML = (data.summary || []).map(r => `
+    <tr><td>${r.Target_National_Code}</td><td>${r.Standard_Name}</td><td>${r.Total_National_Stock}</td>
+    <td>${r.CPSEs_Reporting}</td><td>${r.Critical_CPSE_Count}</td><td>${r.Low_Stock_CPSE_Count}</td>
+    <td>${r.Consumed_CPSE_Count}</td></tr>
+  `).join("");
+}
+</script>
+
+</body>
+</html>
