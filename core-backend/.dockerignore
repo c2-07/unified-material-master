@@ -1,0 +1,23 @@
+node_modules
+dist
+
+.git
+.gitignore
+
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+npm-debug.log*
+.vscode
+.idea
+
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+README*.md
+
+# Seeded on demand by the entrypoint, and gitignored as a duplicate of the
+# root copy. Rebuilt inside the image from the root file.
+ML_Training_Data_Master.csv

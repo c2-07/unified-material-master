@@ -32,7 +32,8 @@ services:
   # 3. Core Web API (Node.js)
   core_backend:
     build:
-      context: ./core-backend
+      context: .
+      dockerfile: core-backend/Dockerfile
     ports:
       - "4000:4000"
     volumes:

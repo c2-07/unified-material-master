@@ -1,0 +1,128 @@
+# Production stack. Single command to bring it up:
+#
+#   cp .env.example .env      # then edit the secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Only nginx publishes a port. Postgres and the API stay on the internal
+# compose network. Start with --profile ml to also run the legacy FastAPI
+# prototype (namespaced under /ml).
+
+name: sih-material
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-sih_database}
+      # Deterministic collation regardless of host locale.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      # -d/-U: quiet, run initdb's own script; it checks the real server, not
+      # just that the port is open.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sih_database}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ── Core API (Express + Prisma) ───────────────────────────────────────────
+  core-backend:
+    build:
+      # Repository root, so the image can carry the seed CSV.
+      context: .
+      dockerfile: core-backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sih_database}?schema=public&connection_limit=10
+      PORT: "4000"
+      NODE_ENV: production
+      # Must be overridden: the built-in default is a known value.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      # Frontend is same-origin behind nginx, so no cross-origin needed.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      # Fail the boot loudly rather than seeding an empty catalog.
+      SEED_REQUIRE_CSV: "1"
+      # Set to 0 to skip schema push + seed on restart (e.g. managed DB).
+      RUN_MIGRATIONS_ON_START: ${RUN_MIGRATIONS_ON_START:-1}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+    # No published ports: nginx is the only ingress.
+
+  # ── Frontend (Next.js standalone) ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Empty = same origin. nginx proxies /api to the backend, so the browser
+        # needs no absolute API origin and no CORS.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      NODE_ENV: production
+    depends_on:
+      core-backend:
+        condition: service_healthy
+    networks: [internal]
+
+  # ── Legacy ML API (FastAPI prototype) ────────────────────────────────────
+  # Not used by the current frontend: main.py exposes its own /api/* routes
+  # that would shadow the Express backend. Kept available behind the opt-in
+  # `ml` profile and namespaced under /ml by nginx.
+  ml-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml
+    restart: unless-stopped
+    profiles: ["ml"]
+    environment:
+      SIH_AI_MODELS_DIR: /app/ai_models
+    volumes:
+      # Model weights are mounted, never baked into the image.
+      - ./ai_models:/app/ai_models:ro
+      - ./users_db.json:/app/users_db.json
+    networks: [internal]
+
+  # ── Reverse proxy / TLS terminator ────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      # Uncomment once you have certificates mounted, and point
+      # PUBLIC_ORIGIN at https://... so the backend/frontend see the right
+      # scheme. Requires an extra server block listening on 443.
+      # - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/proxy-headers.conf:/etc/nginx/proxy-headers.conf:ro
+    depends_on:
+      core-backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:

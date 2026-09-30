@@ -1,0 +1,43 @@
+# OPT-IN rate limiting — not enabled by default.
+#
+# Why this is off by default: `limit_req_zone $binary_remote_addr` keys on the
+# client IP. Whenever this stack is reached through another proxy, a corporate
+# NAT, or an SSH tunnel, every request shares one address, so the "per-IP" limit
+# silently becomes a global cap on total throughput.
+#
+# That is not hypothetical here. verify_seed.py walks ~9 CPSE tenants per demand
+# item, which is hundreds of near-simultaneous requests from a single source
+# address; with limits enabled it started receiving 429s and failed on error
+# payloads rather than on any real defect.
+#
+# To enable, uncomment the zones below (they belong in the http {} block of
+# nginx.conf) and add the matching limit_req line to each API location.
+#
+# Suggested starting point if all clients are genuinely distinct addresses:
+#
+#   limit_req_zone $binary_remote_addr zone=api_general:10m rate=100r/s;
+#   limit_req_zone $binary_remote_addr zone=api_auth:10m     rate=30r/m;
+#   limit_req_zone $binary_remote_addr zone=api_upload:10m   rate=10r/s;
+#   limit_req_status 429;
+#
+# then, inside the server block:
+#
+#   location /api/auth/ {
+#       limit_req zone=api_auth burst=60 nodelay;
+#       proxy_pass http://core_backend;
+#       include /etc/nginx/proxy-headers.conf;
+#   }
+#   location /api/cpse/ {
+#       limit_req zone=api_upload burst=20 nodelay;
+#       proxy_pass http://core_backend;
+#       include /etc/nginx/proxy-headers.conf;
+#   }
+#   location /api/ {
+#       limit_req zone=api_general burst=300 nodelay;
+#       proxy_pass http://core_backend;
+#       include /etc/nginx/proxy-headers.conf;
+#   }
+#
+# If you enable this, put credential-stuffing protection in the login handler
+# itself (per-account lockout, progressive delay, alerting). A coarse shared
+# IP limit is not a substitute for it.

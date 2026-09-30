@@ -10,8 +10,19 @@ import { Readable } from 'stream';
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// CORS: in production the frontend is served from the same origin as this API
+// (nginx proxies /api), so cross-origin access is not needed at all. Set
+// CORS_ORIGIN to a comma-separated allowlist when the frontend is hosted
+// separately. Left unset, origins are reflected as before, which is only
+// appropriate for local development.
+const corsAllowlist = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(cors(corsAllowlist.length ? { origin: corsAllowlist } : {}));
+app.use(express.json({ limit: '25mb' }));
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-sih-key';
@@ -145,13 +156,14 @@ app.get('/api/cpse/:id/inventory', authenticateToken, requireCpseMatch, async (r
 // 2. Add New Inventory Item
 app.post('/api/cpse/:id/inventory', authenticateToken, requireCpseMatch, async (req, res) => {
   const { id } = req.params;
-  const { localMaterialCode, localDescription, quantity, uom, statusTag } = req.body;
+  const { localMaterialCode, localDescription, quantity, uom, statusTag, localBaseCategory } = req.body;
   
   const newItem = await prisma.localInventory.create({
     data: {
       tenantCpseId: id,
       localMaterialCode,
       localDescription,
+      localBaseCategory,
       quantity,
       uom,
       statusTag
@@ -165,6 +177,33 @@ app.post('/api/cpse/:id/inventory', authenticateToken, requireCpseMatch, async (
       actionType: 'MANUAL_ENTRY',
       quantityChanged: quantity,
       workOrderRef: 'USER_INPUT'
+    }
+  });
+
+  // Fetch confidence score from ML model
+  let confidenceScore = 85;
+  try {
+    const mlApiUrl = process.env.ML_API_URL || 'http://ml_api:8000/api/match-material';
+    const res = await fetch(mlApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_description: localDescription })
+    });
+    const data = await res.json();
+    if (data && data.confidence_score) {
+      confidenceScore = data.confidence_score;
+    }
+  } catch (err) {
+    console.error("ML API unreachable, falling back to 85%");
+  }
+
+  // Automatically create a GlobalCatalogMapping entry for AI review
+  await prisma.globalCatalogMapping.create({
+    data: {
+      cpseId: id,
+      cpseLocalCode: localMaterialCode,
+      nationalMaterialCode: 'PENDING-NEW-CODE',
+      aiConfidenceScore: confidenceScore
     }
   });
 
@@ -960,6 +999,37 @@ app.get('/api/ministry/audit-logs', authenticateToken, requireMinistry, async (r
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+
+// ==========================================
+// HEALTH CHECK
+// ==========================================
+// Unauthenticated and cheap. Reports 503 when the database is unreachable, so
+// Docker/Compose, an nginx upstream, or a load balancer can stop routing to an
+// instance that is up but not actually serving.
+app.get('/api/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', database: 'up', uptime: Math.round(process.uptime()) });
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.status(503).json({ status: 'degraded', database: 'down' });
+  }
+});
+
+const server = app.listen(PORT, () => {
   console.log(`Core Backend API running on http://localhost:${PORT}`);
 });
+
+// `docker stop` sends SIGTERM and then SIGKILL after the grace period. Without
+// this the process dies on the first in-flight request.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    console.log(`${signal} received, shutting down gracefully`);
+    server.close(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    });
+    // Do not hang forever if a connection refuses to drain.
+    setTimeout(() => process.exit(1), 10_000).unref();
+  });
+}

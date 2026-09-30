@@ -1,0 +1,54 @@
+# Keep the ML/legacy build context small. Without this, `docker build .` sends
+# the virtualenv, both node_modules trees, the model weights and the git
+# history to the daemon on every build.
+.venv/
+venv/
+node_modules/
+**/node_modules/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv*
+
+# Data exports are large and none of them belong in an image, but the backend
+# seed needs the catalog CSV, so it is re-included explicitly.
+*.csv
+!ML_Training_Data_Master.csv
+ai_models/
+
+# Next.js
+.next/
+**/.next/
+out/
+dist/
+**/dist/
+*.tsbuildinfo
+
+# VCS and CI
+.git/
+.gitignore
+.github/
+.gitattributes
+
+# Docs and local env
+docs/
+*.md
+!README.md
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+*.swp
+
+# The ML image only ever copies main.py / security.py / requirements.
+Dockerfile.ml
+docker-compose*.yml
+frontend/
+
+# core-backend is deliberately NOT excluded: its image is built from this
+# context so it can copy the root ML_Training_Data_Master.csv that prisma/seed.ts
+# needs. Without the CSV the seed produces an empty catalog.

@@ -10,6 +10,7 @@ RUN pip install uv
 COPY requirements.txt .
 
 # Use BuildKit cache mount to cache uv packages
+ENV UV_HTTP_TIMEOUT=300
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system -r requirements.txt
 

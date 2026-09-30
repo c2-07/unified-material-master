@@ -3,7 +3,7 @@ import { AshokaChakraSpinner } from "@/components/AshokaChakraSpinner";
 import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Edit2, Trash2, X, Hash, Tag, BarChart3, Package, Search } from "lucide-react";
+import { Edit2, Trash2, X, Hash, Tag, BarChart3, Package, Search, Plus } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import Dialog from "@/components/Dialog";
 import { useFirstLoad } from "@/hooks/useFirstLoad";
@@ -74,6 +74,37 @@ export default function CpseInventoryPage() {
     type: 'alert' | 'confirm' | 'prompt';
     targetId?: string;
   }>({ isOpen: false, title: '', message: '', type: 'alert' });
+
+  // Add Item Modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItemData, setNewItemData] = useState({
+    localMaterialCode: "",
+    localDescription: "",
+    localBaseCategory: "",
+    quantity: 0,
+    uom: "NOS",
+    statusTag: "ACTIVE"
+  });
+
+  const handleAddItem = async () => {
+    try {
+      await axios.post(`${API_BASE}/api/cpse/${cpseId}/inventory`, newItemData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowAddModal(false);
+      setNewItemData({
+        localMaterialCode: "",
+        localDescription: "",
+        localBaseCategory: "",
+        quantity: 0,
+        uom: "NOS",
+        statusTag: "ACTIVE"
+      });
+      fetchInventory();
+    } catch {
+      alert("Failed to add item.");
+    }
+  };
 
   // Pure data fetch, no state: lets the mount effect and the post-mutation
   // reload share one implementation.
@@ -213,6 +244,13 @@ export default function CpseInventoryPage() {
           <p className="text-sm text-gray-500 mt-1">Manage your local material stock and codes.</p>
         </div>
         <div className="flex gap-3">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-[#0051c3] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#003682] transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Item
+          </button>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -398,6 +436,47 @@ export default function CpseInventoryPage() {
                 </div>
                 <p className="text-sm text-gray-700 leading-snug line-clamp-3" title={detailsItem.localDescription}>{detailsItem.localDescription}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-900 text-lg">Add New Item</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Local Material Code</label>
+                <input type="text" className="w-full p-2 border rounded" value={newItemData.localMaterialCode} onChange={e => setNewItemData({...newItemData, localMaterialCode: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                <input type="text" className="w-full p-2 border rounded" value={newItemData.localDescription} onChange={e => setNewItemData({...newItemData, localDescription: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                <input type="text" className="w-full p-2 border rounded" value={newItemData.localBaseCategory} onChange={e => setNewItemData({...newItemData, localBaseCategory: e.target.value})} />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                  <input type="number" className="w-full p-2 border rounded" value={newItemData.quantity} onChange={e => setNewItemData({...newItemData, quantity: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">UOM</label>
+                  <input type="text" className="w-full p-2 border rounded" value={newItemData.uom} onChange={e => setNewItemData({...newItemData, uom: e.target.value})} />
+                </div>
+              </div>
+              <button onClick={handleAddItem} className="w-full bg-[#0051c3] text-white py-2 rounded-lg mt-2 hover:bg-[#003682]">
+                Save Item
+              </button>
             </div>
           </div>
         </div>

@@ -506,43 +506,16 @@ export default function MinistryCatalogPage() {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              setOpenRowMenu(openRowMenu === item.id ? null : item.id);
+                              setEditItem(item);
+                              setNewNationalCode(item.nationalMaterialCode);
+                              setShowEdit(true);
                             }}
-                            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                            className="text-sm font-medium text-[#0051c3] hover:text-[#003682] bg-[#ebf3ff] hover:bg-[#d6e6ff] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                           >
-                            <MoreVertical className="h-5 w-5" />
+                            <Edit2 className="h-3.5 w-3.5" />
+                            Override
                           </button>
                         </div>
-                        
-                        {openRowMenu === item.id && (
-                          <div className="absolute right-10 top-8 w-52 bg-white border border-gray-200 rounded-md shadow-xl z-50 py-1 text-left">
-                            {!isManual && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApproveSingle(item);
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2 font-medium"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                Save AI Assignment
-                              </button>
-                            )}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenRowMenu(null);
-                                setEditItem(item);
-                                setNewNationalCode(item.nationalMaterialCode);
-                                setShowEdit(true);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm text-[#0051c3] hover:bg-[#ebf3ff] flex items-center gap-2 font-medium"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                              Manual Override
-                            </button>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   );
