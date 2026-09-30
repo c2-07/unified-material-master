@@ -393,12 +393,16 @@ app.delete('/api/cpse/:id/demands/:demandId', authenticateToken, requireCpseMatc
 });
 
 // 9. Respond to a Ministry supply request (Seller approving transfer)
-app.patch('/api/cpse/:id/inbound-requests/:reqId', async (req, res) => {
+app.patch('/api/cpse/:id/inbound-requests/:reqId', authenticateToken, requireCpseMatch, async (req, res) => {
   const { id, reqId } = req.params;
   const { decision } = req.body; // 'APPROVED' or 'DECLINED'
 
+  if (decision !== 'APPROVED' && decision !== 'DECLINED') {
+    return res.status(400).json({ error: "decision must be APPROVED or DECLINED" });
+  }
+
   const request = await prisma.inboundSupplyRequest.update({
-    where: { id: reqId },
+    where: { id: reqId, tenantCpseId: id },
     data: { ourDecision: decision }
   });
 
@@ -409,15 +413,15 @@ app.patch('/api/cpse/:id/inbound-requests/:reqId', async (req, res) => {
     });
 
     if (decision === 'APPROVED') {
-      const demandItem = await prisma.ministryDemandItem.update({
+      // Supplier has agreed, but the Ministry still has to notify the
+      // requester. Mark the item SUPPLIER_ACCEPTED so the Ministry's
+      // "Notify Requester" action stays available, and leave the buyer's
+      // OutboundDemand untouched until send-ack runs. Setting the buyer
+      // to FOUND_AVAILABLE here would tell them the outcome before the
+      // Ministry has actually sent it.
+      await prisma.ministryDemandItem.update({
         where: { id: routing.demandItemId },
-        data: { status: 'ACKNOWLEDGED' }
-      });
-
-      // Update the buyer's outbound demand status
-      await prisma.outboundDemand.updateMany({
-        where: { ministryDemandItemId: demandItem.id },
-        data: { ministryStatus: 'FOUND_AVAILABLE' }
+        data: { status: 'SUPPLIER_ACCEPTED' }
       });
     }
   }
@@ -834,13 +838,16 @@ app.post('/api/ministry/send-ack', authenticateToken, requireMinistry, async (re
     data: { buyerStatus: 'NOTIFIED' }
   });
 
-  const outboundDemands = await prisma.outboundDemand.findMany({
-    where: { tenantCpseId: requesterCpseId, requestedQty }
+  // Match the demand item by its back-link, not by quantity. Two demands
+  // from the same CPSE can share a requestedQty, and matching on quantity
+  // would confirm whichever row came back first.
+  const outboundDemand = await prisma.outboundDemand.findFirst({
+    where: { ministryDemandItemId: demandItemId }
   });
 
-  if (outboundDemands.length > 0) {
+  if (outboundDemand) {
     await prisma.outboundDemand.update({
-      where: { id: outboundDemands[0].id },
+      where: { id: outboundDemand.id },
       data: { ministryStatus: 'FOUND_AVAILABLE', cpseFinalDecision: 'CONFIRMED' }
     });
   }

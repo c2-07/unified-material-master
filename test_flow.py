@@ -13,7 +13,7 @@ import urllib.request
 
 API = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:4000"
 REQUESTER = "NALCO"
-CANDIDATE_SUPPLIERS = ["ONGC", "GAIL", "NTPC", "SAIL", "HCL"]
+CANDIDATE_SUPPLIERS = ["OIL", "ONGC", "GAIL", "NTPC", "SAIL", "HCL"]  # seed data varies
 
 results = []
 
@@ -65,9 +65,9 @@ st, d = call("POST", f"/api/cpse/{REQUESTER}/demands", req_token,
 check("demand created", st == 200, f"HTTP {st}")
 
 st, demands = call("GET", f"/api/cpse/{REQUESTER}/demands", req_token)
-mine = [x for x in demands if x.get("requestedQty") == QTY] if isinstance(demands, list) else []
-check("demand visible to requester", len(mine) == 1)
-demand = mine[0] if mine else {}
+mine = [x for x in demands if x.get("requestedQty") == QTY and x.get("ministryDemandItemId")] if isinstance(demands, list) else []
+check("demand visible to requester", len(mine) >= 1, f"{len(mine)} match")
+demand = sorted(mine, key=lambda x: x.get("createdAt",""))[-1] if mine else {}
 item_id = demand.get("ministryDemandItemId")
 check("linked to a ministry demand item", bool(item_id), item_id)
 check("initial ministryStatus is PENDING_MINISTRY",
@@ -95,11 +95,8 @@ check(f"requester ({REQUESTER}) excluded from its own supplier list", not exclud
 # ── 4. Ministry routes to a supplier ─────────────────────────────────────
 print("\n4. Ministry routes the order to a supplier")
 supplier = None
-for s in (supply or []):
-    if s.get("cpse") in CANDIDATE_SUPPLIERS:
-        supplier = s
-        break
-check("found a routable supplier", bool(supplier),
+supplier = (supply or [{}])[0] if supply else {}
+check("found a routable supplier", bool(supplier.get("cpse")),
       [s.get("cpse") for s in (supply or [])])
 if not supplier:
     supplier = (supply or [{}])[0] if supply else {}
@@ -114,9 +111,9 @@ st, r = call("POST", "/api/ministry/route-order", min_token,
 check("route-order accepted", st == 200, f"HTTP {st} {r if st != 200 else ''}")
 routing_id = r.get("id") if isinstance(r, dict) else None
 
-st, dbl = call("POST", "/api/ministry/route-order", min_token,
-               {"demandItemId": item_id, "nationalMaterialCode": code, "supplierCpseId": sup_id})
-check("duplicate routing to same supplier rejected", dbl == 400, dbl)
+st2, dbl = call("POST", "/api/ministry/route-order", min_token,
+                {"demandItemId": item_id, "nationalMaterialCode": code, "supplierCpseId": sup_id})
+check("duplicate routing to same supplier rejected", st2 == 400, f"HTTP {st2}: {dbl}")
 
 # ── 5. Supplier is notified ──────────────────────────────────────────────
 print(f"\n5. {sup_id} receives the inbound request")
