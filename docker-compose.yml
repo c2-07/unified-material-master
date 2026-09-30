@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: sih_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 2. ML Engine API (FastAPI)
+  ml_api:
+    build: 
+      context: .
+      dockerfile: Dockerfile.ml
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount local directory to allow hot-reloading without rebuilding
+      - .:/app
+      # Exclude node_modules if present in root
+      - /app/node_modules
+    environment:
+      - SIH_AI_MODELS_DIR=/app/ai_models
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # 3. Core Web API (Node.js)
+  core_backend:
+    build:
+      context: ./core-backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./core-backend:/app
+      - /app/node_modules
+    environment:
+      # Automatically points to the 'db' container
+      - DATABASE_URL=postgresql://postgres:supersecretpassword@db:5432/sih_database
+      - PORT=4000
+    depends_on:
+      - db
+    # On startup: Wait for DB, push schema changes, seed the data, and start server
+    command: >
+      sh -c "npx prisma db push &&
+             npx prisma generate &&
+             npx prisma db seed &&
+             npx tsx server.ts"
+
+volumes:
+  pgdata:
