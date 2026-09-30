@@ -4,6 +4,7 @@ import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { ArrowRightLeft, X, Building2, Hash, BarChart3, Info, Search, PlaneTakeoff, PlaneLanding, Package, Send, Network } from "lucide-react";
@@ -358,6 +359,16 @@ export default function MinistryRoutingPage() {
                              <ArrowRightLeft className="h-3.5 w-3.5" /> Awaiting Reply
                           </span>
                         </button>
+                      ) : (item.routings || []).length > 0 && (item.routings || []).every(r => r.supplierStatus === 'REJECTED') ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation();
+                            setRouteItem({ batch, item });
+                            setSupplierCpse("");
+                          }}
+                          className="px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors bg-amber-600 text-white hover:bg-amber-700 border border-amber-700"
+                        >
+                          <ArrowRightLeft className="h-3.5 w-3.5" /> Re-route (All Declined)
+                        </button>
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation();
@@ -392,9 +403,15 @@ export default function MinistryRoutingPage() {
         )}
       </div>
 
-      {routeItem && (
-        <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4" onClick={() => setRouteItem(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full flex flex-col relative" onClick={e => e.stopPropagation()}>
+      {routeItem && createPortal(
+        <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-[9999] p-4" onClick={() => setRouteItem(null)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Route Demand to Supplier"
+            className="bg-white rounded-xl shadow-xl max-w-lg w-full flex flex-col relative max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="p-5 border-b border-gray-100 flex justify-between items-start">
               <div>
@@ -406,9 +423,10 @@ export default function MinistryRoutingPage() {
               </button>
             </div>
 
+            {/* Scrollable body: header and footer stay pinned */}
+            <div className="overflow-y-auto flex-1 min-h-0">
             {/* Details Grid */}
-            <div className="p-5 grid grid-cols-2 gap-5 border-b border-gray-100">
-              <div className="flex items-center gap-3">
+            <div className="p-5 grid grid-cols-2 gap-5 border-b border-gray-100">              <div className="flex items-center gap-3">
                 <div className="bg-gray-100 p-2 rounded-lg"><Building2 className="h-4 w-4 text-gray-500" /></div>
                 <div>
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Requester</p>
@@ -438,7 +456,7 @@ export default function MinistryRoutingPage() {
               </div>
             </div>
 
-            <form onSubmit={handleRouteOrder} className="flex flex-col">
+            <form id="route-order-form" onSubmit={handleRouteOrder} className="flex flex-col min-h-0 flex-1">
               <div className="p-5 space-y-4">
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Supplier CPSE (Who has surplus?)</label>
@@ -492,17 +510,24 @@ export default function MinistryRoutingPage() {
                   </div>
                 </div>
               </div>
+            </form>
+            </div>
 
-              {/* Footer */}
-              <div className="flex justify-end items-center gap-2 px-5 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl">
+              {/* Footer — outside the scroll area so actions are always reachable */}
+              <div className="flex justify-end items-center gap-2 px-5 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl shrink-0">
                 <button type="button" onClick={() => setRouteItem(null)} className="cf-button-secondary">Cancel</button>
-                <button type="submit" className="cf-button-primary flex items-center gap-2">
+                <button
+                  type="submit"
+                  form="route-order-form"
+                  disabled={loadingSuppliers || suppliersForTarget.length === 0}
+                  className="cf-button-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <ArrowRightLeft className="h-4 w-4" /> Dispatch Request
                 </button>
               </div>
-            </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <Dialog 
