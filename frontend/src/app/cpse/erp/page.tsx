@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Database, Link as LinkIcon, RefreshCw, CheckCircle, ArrowRight, X, UploadCloud, FileSpreadsheet } from 'lucide-react';
+import { Database, Link as LinkIcon, RefreshCw, CheckCircle, ArrowRight, X, UploadCloud, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useFirstLoad } from "@/hooks/useFirstLoad";
 import { PageLoader } from "@/components/PageLoader";
@@ -33,6 +33,8 @@ export default function ConnectErpPage() {
   const [sourceFields, setSourceFields] = useState<{id: string, label: string}[]>([]);
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [autoMatchedFile, setAutoMatchedFile] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [cpseName, setCpseName] = useState<string>('Loading...');
   
   useEffect(() => {
@@ -40,21 +42,28 @@ export default function ConnectErpPage() {
     const savedFields = localStorage.getItem('erp_source_fields');
     const savedData = localStorage.getItem('erp_parsed_data');
     const savedMappings = localStorage.getItem('erp_mappings');
-    
+
     if (savedName && savedFields && savedData) {
       setUploadedFileName(savedName);
       setSourceFields(JSON.parse(savedFields));
       setParsedData(JSON.parse(savedData));
       if (savedMappings) setMappings(JSON.parse(savedMappings));
+      // A persisted mapping set — even an explicitly empty one — means the user
+      // already chose these columns. Suppress the auto-match fallback, otherwise
+      // deselecting everything and reloading would silently remap them.
+      if (savedMappings !== null) setAutoMatchedFile(savedName);
       setStep('mapping');
     }
   }, []);
 
-  // Save mappings whenever they change
+  // Save mappings whenever they change, including when emptied.
+  const skipFirstPersist = useRef(true);
   useEffect(() => {
-    if (mappings.length > 0) {
-      localStorage.setItem('erp_mappings', JSON.stringify(mappings));
+    if (skipFirstPersist.current) {
+      skipFirstPersist.current = false;
+      return;
     }
+    localStorage.setItem('erp_mappings', JSON.stringify(mappings));
   }, [mappings]);
 
   // Interaction state for mapping
@@ -79,8 +88,8 @@ export default function ConnectErpPage() {
       const cpseId = Cookies.get("tenantCpseId");
       if (!cpseId) return;
       try {
-        const res = await fetch(`http://localhost:4000/api/cpse/\${cpseId}`, {
-          headers: { 'Authorization': `Bearer \${Cookies.get('token')}` }
+        const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}`, {
+          headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
         });
         if (res.ok) {
           const data = await res.json();
@@ -97,15 +106,53 @@ export default function ConnectErpPage() {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    setUploadError(null);
+
+    // The parser below is CSV only. .xlsx is a zipped XML workbook and would
+    // be read as one long garbage line, so reject it rather than pretending.
+    if (!/\.csv$/i.test(file.name)) {
+      setUploadError(
+        `"${file.name}" is not supported. This importer reads CSV only — re-export your sheet as CSV and try again.`
+      );
+      input.value = '';
+      return;
+    }
+    if (file.size === 0) {
+      setUploadError(`"${file.name}" is empty.`);
+      input.value = '';
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      setUploadError(`Could not read "${file.name}". The file may be corrupt or still syncing from your drive.`);
+      input.value = '';
+    };
     reader.onload = (evt) => {
-      const text = evt.target?.result as string;
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-      if (lines.length > 0) {
+      try {
+        const text = evt.target?.result as string;
+        if (typeof text !== 'string') throw new Error('Unexpected file contents');
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+
+        if (lines.length === 0) {
+          throw new Error(`"${file.name}" has no readable rows.`);
+        }
+        if (lines.length === 1) {
+          throw new Error(
+            `"${file.name}" has a header but no data rows. Add at least one inventory row and upload again.`
+          );
+        }
+
         // Simple CSV parser for demonstration
         const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        if (headers.length < 2 || headers.some(h => h.length === 0)) {
+          throw new Error(
+            `"${file.name}" does not look like CSV — found ${headers.length} column(s). Check that values are comma-separated.`
+          );
+        }
         const data = lines.slice(1).map(line => {
           // Extremely basic regex for CSV splitting ignoring commas inside quotes
           const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
@@ -160,7 +207,17 @@ export default function ConnectErpPage() {
         localStorage.setItem('erp_source_fields', JSON.stringify(newHeaders));
         localStorage.setItem('erp_parsed_data', JSON.stringify(data));
         if (autoMappings.length > 0) localStorage.setItem('erp_mappings', JSON.stringify(autoMappings));
-      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Could not read the uploaded file.');
+      setStep('connect');
+      setSourceFields([]);
+      setParsedData([]);
+      setUploadedFileName('');
+      setAutoMatchedFile(null);
+    } finally {
+      // Allow re-selecting the same file after fixing it.
+      input.value = '';
+    }
     };
     reader.readAsText(file);
   };
@@ -170,7 +227,12 @@ export default function ConnectErpPage() {
   
   // Force automatch if missing
   useEffect(() => {
-    if (step === 'mapping' && mappings.length === 0 && sourceFields.length > 0) {
+    // Only auto-match once per uploaded file. Keyed on the file name so that
+    // deselecting every mapping does not immediately re-apply them: the old
+    // guard was mappings.length === 0, which is exactly the state the user
+    // reaches by deselecting everything.
+    if (step === 'mapping' && autoMatchedFile === null && sourceFields.length > 0) {
+      setAutoMatchedFile(uploadedFileName);
       const autoMappings: Mapping[] = [];
       TARGET_FIELDS.forEach(tf => {
         const tName = tf.id.toLowerCase();
@@ -199,7 +261,7 @@ export default function ConnectErpPage() {
       }
       if (autoMappings.length > 0) setMappings(autoMappings);
     }
-  }, [step, sourceFields, mappings.length]);
+  }, [step, sourceFields, autoMatchedFile, uploadedFileName]);
 
   // Re-calculate lines after paint so refs are guaranteed to be populated
   useEffect(() => {
@@ -320,7 +382,7 @@ export default function ConnectErpPage() {
         if (!mapping) return '';
         // Escape quotes
         const val = row[mapping.sourceId] || '';
-        return `"\${String(val).replace(/"/g, '""')}"`;
+        return `"${String(val).replace(/"/g, '""')}"`;
       }).join(',');
       newCsvLines.push(line);
     });
@@ -337,10 +399,10 @@ export default function ConnectErpPage() {
 
     // 3. Send to actual API
     try {
-      const res = await fetch(`http://localhost:4000/api/cpse/\${cpseId}/inventory/bulk-upload`, {
+      const res = await fetch(`http://localhost:4000/api/cpse/${cpseId}/inventory/bulk-upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer \${Cookies.get('token')}`
+          'Authorization': `Bearer ${Cookies.get('token')}`
         },
         body: formData
       });
@@ -387,20 +449,30 @@ export default function ConnectErpPage() {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Connect Source Data</h2>
           <p className="text-gray-500 mb-8 max-w-md">
-            Upload your inventory CSV or Excel sheet to map columns into the National Database.
+            Upload your inventory CSV to map columns into the National Database.
           </p>
-          
+
+          {uploadError && (
+            <div
+              role="alert"
+              className="w-full max-w-md mb-6 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-600" />
+              <span className="text-sm text-red-800">{uploadError}</span>
+            </div>
+          )}
+
           <div className="flex justify-center w-full max-w-md relative group cursor-pointer">
             <div className="absolute inset-0 bg-blue-50 rounded-xl border-2 border-dashed border-[#0051c3]/30 group-hover:border-[#0051c3]/60 transition-colors"></div>
-            <input 
-              type="file" 
-              accept=".csv,.xlsx" 
-              onChange={handleFileUpload} 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
             <div className="relative py-10 flex flex-col items-center">
               <UploadCloud className="h-8 w-8 text-[#0051c3] mb-3" />
-              <span className="font-semibold text-[#0051c3]">Click to Upload CSV / XLSX</span>
+              <span className="font-semibold text-[#0051c3]">Click to Upload CSV</span>
               <span className="text-xs text-blue-600/70 mt-1">or drag and drop here</span>
             </div>
           </div>
@@ -424,7 +496,7 @@ export default function ConnectErpPage() {
               {lineCoords.map((coord, i) => (
                 <g key={coord.id}>
                   <path 
-                    d={`M \${coord.x1} \${coord.y1} C \${coord.x1 + 150} \${coord.y1}, \${coord.x2 - 150} \${coord.y2}, \${coord.x2} \${coord.y2}`}
+                    d={`M ${coord.x1} ${coord.y1} C ${coord.x1 + 150} ${coord.y1}, ${coord.x2 - 150} ${coord.y2}, ${coord.x2} ${coord.y2}`}
                     fill="none" 
                     stroke={coord.color} 
                     strokeWidth={step === 'syncing' ? "3" : "2"}
@@ -434,19 +506,19 @@ export default function ConnectErpPage() {
                     <>
                       <circle r={step === 'syncing' ? "3" : "2"} fill="#ffffff" className="animate-particle" 
                         style={{ 
-                          offsetPath: `path('M \${coord.x1} \${coord.y1} C \${coord.x1 + 150} \${coord.y1}, \${coord.x2 - 150} \${coord.y2}, \${coord.x2} \${coord.y2}')`, 
-                          animationDelay: `\${i * 0.1}s`,
+                          offsetPath: `path('M ${coord.x1} ${coord.y1} C ${coord.x1 + 150} ${coord.y1}, ${coord.x2 - 150} ${coord.y2}, ${coord.x2} ${coord.y2}')`, 
+                          animationDelay: `${i * 0.1}s`,
                           animationDuration: step === 'syncing' ? '0.4s' : '1.5s',
-                          filter: `drop-shadow(0 0 \${step === 'syncing' ? '8px' : '4px'} \${coord.color})`,
-                          boxShadow: `0 0 10px \${coord.color}`
+                          filter: `drop-shadow(0 0 ${step === 'syncing' ? '8px' : '4px'} ${coord.color})`,
+                          boxShadow: `0 0 10px ${coord.color}`
                         }} 
                       />
                       <circle r={step === 'syncing' ? "3" : "2"} fill="#ffffff" className="animate-particle" 
                         style={{ 
-                          offsetPath: `path('M \${coord.x1} \${coord.y1} C \${coord.x1 + 150} \${coord.y1}, \${coord.x2 - 150} \${coord.y2}, \${coord.x2} \${coord.y2}')`, 
-                          animationDelay: `\${i * 0.1 + (step === 'syncing' ? 0.2 : 0.75)}s`,
+                          offsetPath: `path('M ${coord.x1} ${coord.y1} C ${coord.x1 + 150} ${coord.y1}, ${coord.x2 - 150} ${coord.y2}, ${coord.x2} ${coord.y2}')`, 
+                          animationDelay: `${i * 0.1 + (step === 'syncing' ? 0.2 : 0.75)}s`,
                           animationDuration: step === 'syncing' ? '0.4s' : '1.5s',
-                          filter: `drop-shadow(0 0 \${step === 'syncing' ? '8px' : '4px'} \${coord.color})`
+                          filter: `drop-shadow(0 0 ${step === 'syncing' ? '8px' : '4px'} ${coord.color})`
                         }} 
                       />
                     </>
@@ -464,7 +536,7 @@ export default function ConnectErpPage() {
                 const color = getColor(selectedSource);
                 return (
                   <path 
-                    d={`M \${x1} \${y1} C \${x1 + 150} \${y1}, \${mousePos.x - 150} \${mousePos.y}, \${mousePos.x} \${mousePos.y}`}
+                    d={`M ${x1} ${y1} C ${x1 + 150} ${y1}, ${mousePos.x - 150} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`}
                     fill="none" 
                     stroke={color} 
                     strokeWidth="3"
@@ -497,6 +569,9 @@ export default function ConnectErpPage() {
                       setMappings([]);
                       setSourceFields([]);
                       setParsedData([]);
+                      setUploadedFileName('');
+                      setAutoMatchedFile(null);
+                      setUploadError(null);
                     }}
                     className="p-1.5 hover:bg-blue-100 rounded-md text-blue-600 transition-colors"
                     title="Unlink CSV"
@@ -518,11 +593,11 @@ export default function ConnectErpPage() {
                           return (
                             <div 
                               ref={el => { if (el) leftRefs.current[f.id] = el; }}
-                              className={`h-4 w-4 rounded-full border-2 transition-all duration-300 \${isSelected ? 'animate-pulse scale-125 z-10' : 'hover:scale-110'}`}
+                              className={`h-4 w-4 rounded-full border-2 transition-all duration-300 ${isSelected ? 'animate-pulse scale-125 z-10' : 'hover:scale-110'}`}
                               style={{
                                 borderColor: color,
                                 backgroundColor: (isMapped || isSelected) ? color : 'white',
-                                boxShadow: isSelected ? `0 0 12px \${color}` : 'none'
+                                boxShadow: isSelected ? `0 0 12px ${color}` : 'none'
                               }}
                             />
                           );
@@ -565,11 +640,11 @@ export default function ConnectErpPage() {
                           return (
                             <div 
                               ref={el => { if (el) rightRefs.current[f.id] = el; }}
-                              className={`h-4 w-4 rounded-full border-2 transition-all duration-300 \${!isMapped && selectedSource ? 'animate-pulse scale-110 z-10 hover:scale-125' : 'hover:scale-110'}`}
+                              className={`h-4 w-4 rounded-full border-2 transition-all duration-300 ${!isMapped && selectedSource ? 'animate-pulse scale-110 z-10 hover:scale-125' : 'hover:scale-110'}`}
                               style={{
                                 borderColor: dotColor,
                                 backgroundColor: isMapped ? dotColor : 'white',
-                                boxShadow: (!isMapped && selectedSource) ? `0 0 10px \${activeColor}` : 'none'
+                                boxShadow: (!isMapped && selectedSource) ? `0 0 10px ${activeColor}` : 'none'
                               }}
                             />
                           );

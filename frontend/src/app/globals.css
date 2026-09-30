@@ -6,6 +6,11 @@
   --color-brand-blue-hover: #003682;
   --color-surface: #ffffff;
   --color-background: #f9fafb;
+
+  /* ERP mapping canvas: photons travelling along the connector wires.
+     The path itself is supplied per-particle via the inline offsetPath
+     style, so the keyframes only need to drive offset-distance. */
+  --animate-particle: particle-travel 1.5s linear infinite;
 }
 
 @layer base {
@@ -67,4 +72,20 @@
 
 .dialog-enter {
   animation: dialog-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── ERP connector photon ── */
+@keyframes particle-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-particle {
+    animation: none;
+  }
 }
