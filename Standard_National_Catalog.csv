@@ -1,0 +1,23 @@
+National_Code,Standard_Material_Name,Category,Base_Item,Size_Spec,Material_Type,Standard_UOM
+NAT-MEC-1001,SKF Deep Groove Ball Bearing 6205,Mechanical,Bearing,6205,Steel,EA
+NAT-MEC-1002,Timken Tapered Roller Bearing 32210,Mechanical,Bearing,32210,Steel,EA
+NAT-MEC-1003,FAG Cylindrical Roller Bearing NU310,Mechanical,Bearing,NU310,Steel,EA
+NAT-FAS-2001,Hex Bolt High Strength M12 x 50mm,Fasteners,Bolt,M12 x 50mm,High Strength Steel,NOS
+NAT-FAS-2002,Hex Bolt High Strength M16 x 75mm,Fasteners,Bolt,M16 x 75mm,High Strength Steel,NOS
+NAT-FAS-2003,Stainless Steel Nut M12,Fasteners,Nut,M12,Stainless Steel,NOS
+NAT-PVF-3001,Seamless Carbon Steel Pipe 8 inch SCH 40,Pipes,Pipe,8 inch,Carbon Steel,MTR
+NAT-PVF-3002,Seamless Carbon Steel Pipe 12 inch SCH 80,Pipes,Pipe,12 inch,Carbon Steel,MTR
+NAT-PVF-3003,Stainless Steel Pipe 304L 2 inch SCH 10,Pipes,Pipe,2 inch,Stainless Steel 304L,MTR
+NAT-PVF-3004,Gate Valve Cast Iron 4 inch Flanged,Valves,Gate Valve,4 inch,Cast Iron,EA
+NAT-PVF-3005,Ball Valve Stainless Steel 1 inch Threaded,Valves,Ball Valve,1 inch,Stainless Steel,EA
+NAT-ELE-4001,Copper Cable 4 Core 16 sqmm Armoured,Electrical,Cable,16 sqmm,Copper,MTR
+NAT-ELE-4002,Copper Cable 3 Core 35 sqmm Armoured,Electrical,Cable,35 sqmm,Copper,MTR
+NAT-ELE-4003,Distribution Transformer 500 kVA 11kV/433V,Electrical Equipment,Transformer,500 kVA,Oil Cooled,EA
+NAT-ELE-4004,LED Flood Light 200W IP66 Outdoor,Electrical,LED Flood Light,200W,Aluminium Housing,EA
+NAT-PPE-5001,Safety Shoes Leather Steel Toe Size 9,Safety,Safety Shoes,Size 9,Leather/Steel,PRS
+NAT-PPE-5002,Safety Shoes Leather Steel Toe Size 10,Safety,Safety Shoes,Size 10,Leather/Steel,PRS
+NAT-PPE-5003,Industrial Safety Helmet Yellow ISI,Safety,Safety Helmet,Standard,HDPE,EA
+NAT-PPE-5004,Leather Welding Gloves 14 inch,Safety,Welding Gloves,14 inch,Leather,PRS
+NAT-CHM-6001,Industrial Lubricant Shell Tellus S2 V46 208L,Lubricants,Hydraulic Oil,208L Drum,Mineral Oil ISO VG46,DRM
+NAT-CHM-6002,Castrol Magna GC 68 Gear Oil 20L,Lubricants,Gear Oil,20L Can,Mineral Oil ISO VG68,CAN
+NAT-MHE-7001,Rubber Conveyor Belt EP400/3 1000mm Width,Material Handling,Conveyor Belt,1000mm,Rubber EP400/3,MTR
