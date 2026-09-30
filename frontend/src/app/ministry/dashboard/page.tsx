@@ -63,6 +63,7 @@ export default function MinistryCatalogPage() {
   const [undoStack, setUndoStack] = useState<ChangeSnapshot[][]>([]);
 
   const [showMenu, setShowMenu] = useState(false);
+  const [hideApproved, setHideApproved] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
   const [openRowMenu, setOpenRowMenu] = useState<string | null>(null);
@@ -202,12 +203,13 @@ export default function MinistryCatalogPage() {
   };
 
   // 1. Filter
-  const filteredCatalog = catalog.filter(item => 
-    item.cpseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.cpseLocalCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.nationalMaterialCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.localDescription || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCatalog = catalog.filter(item => {
+    if (hideApproved && item.aiConfidenceScore === 100) return false;
+    return item.cpseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.cpseLocalCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.nationalMaterialCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.localDescription || "").toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   // 2. Sort
   const getStatusWeight = (score: number) => {
@@ -392,6 +394,16 @@ export default function MinistryCatalogPage() {
                     Undo Last Action {undoStack.length > 0 ? `(${undoStack.length})` : ''}
                   </button>
                   <div className="border-t border-gray-100 my-1"></div>
+                  <button 
+                    onClick={() => {
+                      setHideApproved(!hideApproved);
+                      setShowMenu(false);
+                    }} 
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {hideApproved ? 'Show Approved Items' : 'Hide Approved Items'}
+                  </button>
                   <button 
                     onClick={handleClearApprovals} 
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
