@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 
 interface DialogProps {
@@ -23,8 +26,30 @@ export default function Dialog({
   children
 }: DialogProps) {
   const [inputValue, setInputValue] = useState('');
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setInputValue('');
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleConfirm = () => {
     if (onConfirm) {
@@ -41,9 +66,19 @@ export default function Dialog({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-      <div className={`bg-white rounded-lg shadow-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${type === 'custom' ? 'max-w-2xl' : 'max-w-sm'}`}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`bg-white rounded-lg shadow-xl w-full overflow-hidden dialog-enter ${type === 'custom' ? 'max-w-2xl' : 'max-w-sm'}`}
+      >
         <div className={`px-4 py-3 border-b border-gray-100 flex items-center gap-2 ${
           type === 'alert' ? 'bg-red-50 text-red-700' : 
           type === 'success' ? 'bg-green-50 text-green-800' :
@@ -106,6 +141,7 @@ export default function Dialog({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
