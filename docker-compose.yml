@@ -36,21 +36,12 @@ services:
       dockerfile: core-backend/Dockerfile
     ports:
       - "4000:4000"
-    volumes:
-      - ./core-backend:/app
-      - /app/node_modules
     environment:
       # Automatically points to the 'db' container
       - DATABASE_URL=postgresql://postgres:supersecretpassword@db:5432/sih_database
       - PORT=4000
     depends_on:
       - db
-    # On startup: Wait for DB, push schema changes, seed the data, and start server
-    command: >
-      sh -c "npx prisma db push &&
-             npx prisma generate &&
-             npx prisma db seed &&
-             npx tsx server.ts"
 
 volumes:
   pgdata:
